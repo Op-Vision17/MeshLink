@@ -43,9 +43,6 @@ class MeshEngine(private val context: Context) {
             Log.i(TAG, "Syncing local P2P MAC $p2pMac to BLE advertiser")
             bleAdvertiser.setLocalP2pMac(p2pMac)
         }
-        onP2pDeviceDiscovered = { peerId, peerName, p2pMac ->
-            onP2pPeerSeen(peerId, peerName, p2pMac)
-        }
     }
 
     private val outboxQueue = java.util.concurrent.ConcurrentLinkedQueue<Packet>()
@@ -400,19 +397,6 @@ class MeshEngine(private val context: Context) {
         val isNew = peerRegistry.upsert(entry)
         Log.d(TAG, "Peer seen (isNew=$isNew): $peerId ($peerName) mac=$mac p2pMac=$p2pMac rssi=$rssi")
         emit(MeshEvent.PeerFound(peerId = peerId, peerName = peerName, rssi = rssi))
-    }
-
-    private fun onP2pPeerSeen(peerId: String, peerName: String, p2pMac: String) {
-        val entry = PeerEntry(
-            peerId = peerId,
-            peerName = peerName,
-            rssi = -55,
-            connectionType = "Wi-Fi Direct"
-        )
-        wifiDirectManager.registerBlePeer(peerId, peerName, p2pMac = p2pMac)
-        val isNew = peerRegistry.upsert(entry)
-        Log.d(TAG, "P2P Peer seen via Wi-Fi Direct (isNew=$isNew): $peerId ($peerName) p2pMac=$p2pMac")
-        emit(MeshEvent.PeerFound(peerId = peerId, peerName = peerName, rssi = -55))
     }
 
     private fun onBleScanError(errorCode: Int, description: String) {

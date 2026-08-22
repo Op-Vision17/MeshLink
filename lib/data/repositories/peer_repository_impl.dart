@@ -15,6 +15,11 @@ class PeerRepositoryImpl implements PeerRepository {
   }
 
   @override
+  Future<void> deletePeer(String peerId) async {
+    await _localDataSource.deletePeer(peerId);
+  }
+
+  @override
   Future<List<PeerNode>> getPeers() async {
     final list = await _localDataSource.getPeers();
     return list.map((p) => p.toDomain()).toList();

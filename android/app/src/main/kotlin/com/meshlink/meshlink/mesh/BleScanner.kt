@@ -106,15 +106,9 @@ class BleScanner(
         val scanner = adapter.bluetoothLeScanner
             ?: return BleResult.Error("BluetoothLeScanner unavailable — Bluetooth may be turning off")
 
-        val serviceFilter = ScanFilter.Builder()
+        val filter = ScanFilter.Builder()
             .setServiceUuid(MeshConstants.MESH_SERVICE_UUID)
             .build()
-
-        val mfrFilter = ScanFilter.Builder()
-            .setManufacturerData(0x05FF, byteArrayOf())
-            .build()
-
-        val filters = listOf(serviceFilter, mfrFilter)
 
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
@@ -125,9 +119,9 @@ class BleScanner(
             .build()
 
         return try {
-            scanner.startScan(filters, settings, scanCallback)
+            scanner.startScan(listOf(filter), settings, scanCallback)
             isScanning = true
-            Log.i(TAG, "BLE scan started with hybrid filters (ServiceUUID + Mfr 0x05FF)")
+            Log.i(TAG, "BLE scan started, filtering on ${MeshConstants.MESH_SERVICE_UUID_STRING}")
             BleResult.Success
         } catch (e: SecurityException) {
             Log.e(TAG, "BLUETOOTH_SCAN permission missing", e)

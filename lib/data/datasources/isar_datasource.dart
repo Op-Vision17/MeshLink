@@ -70,6 +70,13 @@ class IsarDataSource {
     });
   }
 
+  Future<void> deletePeer(String peerId) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.localPeers.filter().peerIdEqualTo(peerId).deleteAll();
+    });
+  }
+
   Future<List<LocalPeer>> getPeers() async {
     final isar = await db;
     return await isar.localPeers.where().findAll();

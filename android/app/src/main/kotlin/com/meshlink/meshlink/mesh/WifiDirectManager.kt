@@ -44,9 +44,6 @@ class WifiDirectManager(
     private val TAG = "WifiDirectManager"
     private val deviceTag: String get() = "[DEVICE: $localNodeId | ${android.os.Build.MODEL}]"
 
-    var onP2pDeviceDiscovered: ((peerId: String, peerName: String, p2pMac: String) -> Unit)? = null
-    var onLocalP2pMacDiscovered: ((mac: String) -> Unit)? = null
-
     private var wifiP2pManager: WifiP2pManager? = null
     private var channel: WifiP2pManager.Channel? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -108,12 +105,6 @@ class WifiDirectManager(
                                 }
                                 discoveredP2pDevices[devMac] = dev
                                 Log.d(TAG, "$deviceTag 📱 Discovered Wi-Fi P2P device: name=${dev.deviceName} mac=${dev.deviceAddress} status=${p2pStatusDescription(dev.status)}")
-
-                                val cleanName = dev.deviceName.takeIf { !it.isNullOrBlank() } ?: "Device ${devMac.takeLast(5)}"
-                                val mappedPeerId = macToPeerId[devMac] ?: macToPeerId[dev.deviceAddress] ?: resolvePeerIdByDeviceName(dev.deviceName) ?: "p2p_${devMac.replace(":", "").take(8).lowercase()}"
-                                macToPeerId[devMac] = mappedPeerId
-                                onP2pDeviceDiscovered?.invoke(mappedPeerId, cleanName, devMac)
-
                                 if (dev.status == WifiP2pDevice.INVITED) {
                                     val mappedPeerId = macToPeerId[devMac] ?: macToPeerId[dev.deviceAddress]
                                     val matchedByInfo = peerInfoMap.entries.firstOrNull { (_, info) ->

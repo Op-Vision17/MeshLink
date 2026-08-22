@@ -88,11 +88,12 @@ class BleAdvertiser(private val context: Context, private val localNodeId: Strin
             .setTimeout(0)  // No timeout — continuous advertising
             .build()
 
-        // Set device name safely to prevent DATA_TOO_LARGE (>31 bytes)
+        // Set device name to custom display name or model
         try {
-            val currentName = adapter.name
-            if (currentName.isNullOrBlank() || currentName.length > 8) {
-                adapter.name = "ML-${Build.MODEL.take(5)}"
+            if (!adapter.name.isNullOrBlank() && !adapter.name.contains("Android")) {
+                // keep current custom name
+            } else {
+                adapter.name = "MeshNode-${Build.MODEL.take(10)}"
             }
         } catch (e: SecurityException) {
             Log.w(TAG, "Cannot set bluetooth adapter name", e)

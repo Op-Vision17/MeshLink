@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../domain/entities/chat_message.dart';
-import '../../main.dart';
+import '../../utils/app_colors.dart';
 import '../providers/mesh_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -99,12 +99,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messages = messageMap.values.toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: MeshColors.background,
+      backgroundColor: AppColors.getBg(context),
       appBar: AppBar(
-        backgroundColor: MeshColors.surface,
+        backgroundColor: AppColors.getCard(context),
         surfaceTintColor: Colors.transparent,
-        foregroundColor: MeshColors.textPrimary,
+        foregroundColor: AppColors.getText(context),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
@@ -113,51 +115,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            // Peer avatar with status indicator
-            Stack(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    gradient: MeshColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      currentPeer.name.isNotEmpty
-                          ? currentPeer.name[0].toUpperCase()
-                          : '?',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                // Connection dot
-                Positioned(
-                  right: -1,
-                  bottom: -1,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: currentPeer.isConnected
-                          ? MeshColors.success
-                          : MeshColors.warning,
-                      border: Border.all(
-                        color: MeshColors.surface,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: currentPeer.isConnected
+                    ? AppColors.success
+                    : AppColors.getSubtext(context).withAlpha(140),
+                boxShadow: currentPeer.isConnected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.success.withAlpha(140),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        )
+                      ]
+                    : null,
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,24 +142,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Text(
                     currentPeer.name,
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: MeshColors.textPrimary,
+                      color: AppColors.getText(context),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    currentPeer.isConnected
-                        ? 'Connected via Wi-Fi Direct ${currentPeer.groupOwnerIp != null ? "(${currentPeer.groupOwnerIp})" : ""}'
-                        : 'Status: ${currentPeer.wifiState.name}',
+                    currentPeer.isConnected ? 'Direct Offline Link' : 'Offline',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: currentPeer.isConnected
-                          ? MeshColors.success
-                          : MeshColors.warning,
+                          ? AppColors.success
+                          : AppColors.getSubtext(context),
                       fontWeight: FontWeight.w500,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -190,29 +166,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
-          if (currentPeer.isConnected || currentPeer.wifiState == PeerWifiState.connecting)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: () {
-                  ref.read(meshProvider.notifier).disconnectFromPeer(currentPeer.id);
-                  Navigator.of(context).pop();
-                },
-                icon: const Icon(Icons.link_off_rounded, size: 16, color: MeshColors.error),
-                label: Text(
-                  'Disconnect',
-                  style: GoogleFonts.inter(
-                    color: MeshColors.error,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+          if (currentPeer.isConnected)
+            IconButton(
+              icon: const Icon(Icons.link_off_rounded, color: AppColors.error, size: 20),
+              onPressed: () {
+                ref.read(meshProvider.notifier).disconnectFromPeer(currentPeer.id);
+              },
+              tooltip: 'Disconnect',
             ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: MeshColors.border),
+          child: Container(
+            height: 0.5,
+            color: AppColors.getBorder(context),
+          ),
         ),
       ),
       body: Column(
@@ -221,35 +189,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: messages.isEmpty
                 ? Center(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: MeshColors.primary.withAlpha(10),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: 28,
-                            color: MeshColors.primary.withAlpha(80),
-                          ),
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 40,
+                          color: AppColors.getSubtext(context).withAlpha(120),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         Text(
                           'No messages yet',
                           style: GoogleFonts.inter(
-                            color: MeshColors.textTertiary,
-                            fontSize: 15,
+                            color: AppColors.getText(context),
                             fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Send a message to ${currentPeer.name}',
+                          'Say hello to ${currentPeer.name}!',
                           style: GoogleFonts.inter(
-                            color: MeshColors.textDisabled,
+                            color: AppColors.getSubtext(context),
                             fontSize: 13,
                           ),
                         ),
@@ -259,8 +219,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 : ListView.builder(
                     controller: _scrollController,
                     reverse: true,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[index];
@@ -269,19 +228,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     },
                   ),
           ),
-          _buildInputArea(currentPeer.isConnected),
+          _buildInputArea(currentPeer.isConnected, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildInputArea(bool isConnected) {
+  Widget _buildInputArea(bool isConnected, bool isDark) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: MeshColors.surface,
+        color: AppColors.getCard(context),
         border: Border(
-          top: BorderSide(color: MeshColors.border, width: 0.5),
+          top: BorderSide(color: AppColors.getBorder(context), width: 0.5),
         ),
       ),
       child: SafeArea(
@@ -290,27 +249,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: MeshColors.background,
+                  color: AppColors.getBg(context),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: MeshColors.border),
+                  border: Border.all(color: AppColors.getBorder(context)),
                 ),
                 child: TextField(
                   controller: _textController,
                   style: GoogleFonts.inter(
-                    color: MeshColors.textPrimary,
+                    color: AppColors.getText(context),
                     fontSize: 14,
                   ),
                   decoration: InputDecoration(
-                    hintText: isConnected
-                        ? 'Type a message…'
-                        : 'Connecting to peer…',
+                    hintText: isConnected ? 'Type a message…' : 'Connecting to friend…',
                     hintStyle: GoogleFonts.inter(
-                      color: MeshColors.textDisabled,
+                      color: AppColors.getSubtext(context),
                       fontSize: 14,
                     ),
                     filled: false,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -322,13 +278,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             const SizedBox(width: 8),
             Container(
               decoration: BoxDecoration(
-                gradient: MeshColors.primaryGradient,
+                color: AppColors.getPrimary(context),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
                 onPressed: _handleSend,
                 icon: const Icon(Icons.send_rounded, size: 18),
-                color: Colors.white,
+                color: isDark ? Colors.black : Colors.white,
                 padding: const EdgeInsets.all(10),
                 constraints: const BoxConstraints(),
               ),
@@ -348,8 +304,28 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     final timeStr =
         '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}';
+
+    final Color bubbleColor = isMe
+        ? (isDark ? AppColors.primaryDarkSurface : AppColors.primaryLight)
+        : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceLight);
+
+    final Color textColor = isMe
+        ? (isDark ? const Color(0xFFE6FBF5) : Colors.white)
+        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight);
+
+    final Color timeColor = isMe
+        ? (isDark ? const Color(0xFF8CEFD8) : Colors.white.withAlpha(180))
+        : (isDark ? AppColors.textTertiaryDark : AppColors.textSecondaryLight);
+
+    final Border? bubbleBorder = isMe
+        ? (isDark ? Border.all(color: AppColors.primaryDark.withAlpha(60), width: 0.8) : null)
+        : Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            width: 0.8,
+          );
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -359,17 +335,14 @@ class _MessageBubble extends StatelessWidget {
         constraints:
             BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          gradient: isMe ? MeshColors.primaryGradient : null,
-          color: isMe ? null : MeshColors.surfaceElevated,
+          color: bubbleColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(isMe ? 18 : 4),
             bottomRight: Radius.circular(isMe ? 4 : 18),
           ),
-          border: isMe
-              ? null
-              : Border.all(color: MeshColors.border, width: 0.5),
+          border: bubbleBorder,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -377,7 +350,7 @@ class _MessageBubble extends StatelessWidget {
             Text(
               message.content,
               style: GoogleFonts.inter(
-                color: isMe ? Colors.white : MeshColors.textPrimary,
+                color: textColor,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -389,9 +362,7 @@ class _MessageBubble extends StatelessWidget {
                 Text(
                   timeStr,
                   style: GoogleFonts.inter(
-                    color: isMe
-                        ? Colors.white.withAlpha(150)
-                        : MeshColors.textDisabled,
+                    color: timeColor,
                     fontSize: 10,
                   ),
                 ),
@@ -406,8 +377,8 @@ class _MessageBubble extends StatelessWidget {
                             : Icons.error_outline_rounded,
                     size: 12,
                     color: message.status == MessageStatus.failed
-                        ? MeshColors.error
-                        : Colors.white.withAlpha(150),
+                        ? AppColors.error
+                        : timeColor,
                   ),
                 ]
               ],

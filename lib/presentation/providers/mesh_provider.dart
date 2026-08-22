@@ -389,9 +389,20 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
   Future<void> startDiscovery() async {
     state = state.copyWith(
       isDiscovering: true,
-      statusMessage: 'Scanning for nearby mesh nodes…',
+      statusMessage: 'Looking for nearby friends…',
     );
     await _repository.startDiscovery();
+  }
+
+  Future<void> forgetFriend(String peerId) async {
+    try {
+      await _peerRepository.deletePeer(peerId);
+      final norm = normalizeId(peerId);
+      final updatedSaved = state.savedPeers.where((p) => p.id != peerId && normalizeId(p.id) != norm).toList();
+      state = state.copyWith(savedPeers: updatedSaved);
+    } catch (e) {
+      debugPrint('Failed to forget friend $peerId: $e');
+    }
   }
 
   Future<void> stopDiscovery() async {
