@@ -50,6 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(() {
       ref.read(permissionProvider.notifier).checkBluetoothState();
+      ref.read(permissionProvider.notifier).checkWifiState();
       ref.read(permissionProvider.notifier).checkLocationServiceState();
       _nameController.text = ref.read(userProfileProvider).displayName;
     });
@@ -67,6 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(permissionProvider.notifier).checkBluetoothState();
+      ref.read(permissionProvider.notifier).checkWifiState();
       ref.read(permissionProvider.notifier).checkLocationServiceState();
     }
   }
@@ -191,14 +193,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                     ),
                   );
                 },
-                onForgetPeer: (peer) => _showForgetFriendDialog(context, ref, peer),
+                onDeleteChat: (peer) => _showDeleteChatDialog(context, ref, peer),
                 onGoToExplore: () => setState(() => _currentIndex = 1),
               ),
 
               // Tab 1: Explore
               _ExploreTab(
                 meshState: meshState,
-                onConnect: (peerId) {
+                onConnect: (peerId) async {
+                  await ref.read(permissionProvider.notifier).ensureRadiosAndPermissionsReady();
                   ref.read(meshProvider.notifier).connectToPeer(peerId);
                 },
                 onDisconnect: (peerId) {
@@ -320,13 +323,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 class _ChatsTab extends StatelessWidget {
   final MeshUiState meshState;
   final ValueChanged<PeerUiModel> onSelectPeer;
-  final ValueChanged<PeerUiModel> onForgetPeer;
+  final ValueChanged<PeerUiModel> onDeleteChat;
   final VoidCallback onGoToExplore;
 
   const _ChatsTab({
     required this.meshState,
     required this.onSelectPeer,
-    required this.onForgetPeer,
+    required this.onDeleteChat,
     required this.onGoToExplore,
   });
 
@@ -337,10 +340,7 @@ class _ChatsTab extends StatelessWidget {
       peersMap[normalizeId(peer.id)] = peer;
     }
     for (final peer in meshState.peers) {
-      final key = normalizeId(peer.id);
-      if (peersMap.containsKey(key)) {
-        peersMap[key] = peer;
-      }
+      peersMap[normalizeId(peer.id)] = peer;
     }
 
     final chatList = peersMap.values.toList();
@@ -415,6 +415,7 @@ class _ChatsTab extends StatelessWidget {
         );
 
         final isConnected = friend.isConnected || livePeer.isConnected;
+        final isConnecting = friend.wifiState == PeerWifiState.connecting || livePeer.wifiState == PeerWifiState.connecting;
 
         final msgs = meshState.chatMessages
             .where((m) =>
@@ -428,7 +429,11 @@ class _ChatsTab extends StatelessWidget {
 
         final lastMsg = msgs.isNotEmpty ? msgs.last : null;
         final lastMsgText = lastMsg != null
-            ? (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content)
+            ? (lastMsg.messageType == MessageType.image
+                ? '📷 Photo'
+                : (lastMsg.messageType == MessageType.video
+                    ? '🎥 Video'
+                    : (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content)))
             : (isConnected ? 'Direct link ready' : 'Tap to open chat');
 
         final timeStr = lastMsg != null
@@ -438,6 +443,7 @@ class _ChatsTab extends StatelessWidget {
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           onTap: () => onSelectPeer(livePeer),
+          onLongPress: () => onDeleteChat(friend),
           title: Row(
             children: [
               Container(
@@ -447,7 +453,9 @@ class _ChatsTab extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: isConnected
                       ? AppColors.success
-                      : AppColors.getSubtext(context).withAlpha(120),
+                      : isConnecting
+                          ? AppColors.warning
+                          : AppColors.getSubtext(context).withAlpha(120),
                 ),
               ),
               const SizedBox(width: 10),
@@ -487,15 +495,6 @@ class _ChatsTab extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          trailing: IconButton(
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: AppColors.getSubtext(context),
-              size: 20,
-            ),
-            onPressed: () => onForgetPeer(friend),
-            tooltip: 'Forget Friend',
-          ),
         );
       },
     );
@@ -528,6 +527,136 @@ class _ExploreTab extends ConsumerWidget {
         _StatusBanner(message: meshState.statusMessage),
         const SizedBox(height: 16),
 
+        // Radio & Permission Warning Banners
+        if (!permState.allGranted)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning.withAlpha(80)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.security_rounded, color: AppColors.warning, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Permissions required for offline mesh',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.getText(context)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => ref.read(permissionProvider.notifier).checkAndRequestPermissions(),
+                  child: Text('Grant', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.warning)),
+                ),
+              ],
+            ),
+          ),
+
+        if (!permState.isBluetoothEnabled)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.error.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.error.withAlpha(80)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.bluetooth_disabled_rounded, color: AppColors.error, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Bluetooth is turned OFF',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.getText(context)),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => ref.read(permissionProvider.notifier).requestEnableBluetooth(),
+                  child: Text('Turn On', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+
+        if (!permState.isWifiEnabled)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning.withAlpha(80)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.wifi_off_rounded, color: AppColors.warning, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Wi-Fi is turned OFF',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.getText(context)),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.warning,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => ref.read(permissionProvider.notifier).requestEnableWifi(),
+                  child: Text('Turn On', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+
+        if (!permState.isLocationServiceEnabled)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning.withAlpha(80)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.location_off_rounded, color: AppColors.warning, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Location service is turned OFF',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.getText(context)),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.warning,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => ref.read(permissionProvider.notifier).requestEnableLocationService(),
+                  child: Text('Turn On', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -556,59 +685,215 @@ class _ExploreTab extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              if (!permState.allGranted) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.warning,
-                      side: const BorderSide(color: AppColors.warning),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () => ref.read(permissionProvider.notifier).checkAndRequestPermissions(),
-                    icon: const Icon(Icons.security_rounded, size: 18),
-                    label: const Text('Grant Permissions'),
-                  ),
-                ),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: meshState.isDiscovering
-                          ? AppColors.error
-                          : AppColors.getPrimary(context),
-                      foregroundColor: meshState.isDiscovering
-                          ? Colors.white
-                          : (isDark ? Colors.black : Colors.white),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      if (meshState.isDiscovering) {
-                        ref.read(meshProvider.notifier).stopDiscovery();
-                      } else {
-                        ref.read(meshProvider.notifier).startDiscovery();
-                      }
-                    },
-                    icon: Icon(
-                      meshState.isDiscovering ? Icons.stop_rounded : Icons.search_rounded,
-                      size: 20,
-                    ),
-                    label: Text(
-                      meshState.isDiscovering ? 'Stop Searching' : 'Find Friends Nearby',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: meshState.isDiscovering
+                        ? AppColors.error
+                        : AppColors.getPrimary(context),
+                    foregroundColor: meshState.isDiscovering
+                        ? Colors.white
+                        : (isDark ? Colors.black : Colors.white),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  onPressed: () async {
+                    if (meshState.isDiscovering) {
+                      ref.read(meshProvider.notifier).stopDiscovery();
+                    } else {
+                      await ref.read(permissionProvider.notifier).ensureRadiosAndPermissionsReady();
+                      ref.read(meshProvider.notifier).startDiscovery();
+                    }
+                  },
+                  icon: Icon(
+                    meshState.isDiscovering ? Icons.stop_rounded : Icons.search_rounded,
+                    size: 20,
+                  ),
+                  label: Text(
+                    meshState.isDiscovering ? 'Stop Searching' : 'Find Friends Nearby',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
         const SizedBox(height: 20),
 
+        // ── Saved Friends Section ──────────────────────────────────────────
+        if (meshState.savedPeers.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Saved Friends',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.getText(context),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.getPrimary(context).withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${meshState.savedPeers.length}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.getPrimary(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.getCard(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.getBorder(context)),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: meshState.savedPeers.length,
+              separatorBuilder: (ctx, i) => Divider(
+                height: 1,
+                color: AppColors.getBorder(context),
+              ),
+              itemBuilder: (context, index) {
+                final savedFriend = meshState.savedPeers[index];
+                final norm = normalizeId(savedFriend.id);
+                final livePeer = meshState.peers.firstWhere(
+                  (p) => p.id == savedFriend.id || normalizeId(p.id) == norm,
+                  orElse: () => savedFriend,
+                );
+                final isConnected = livePeer.isConnected;
+                final isConnecting = livePeer.wifiState == PeerWifiState.connecting;
+
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  onLongPress: () => _showForgetFriendDialog(context, ref, savedFriend),
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isConnected
+                              ? AppColors.success
+                              : isConnecting
+                                  ? AppColors.warning
+                                  : AppColors.getSubtext(context).withAlpha(120),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          savedFriend.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.getText(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: isConnected
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.getPrimary(context),
+                                foregroundColor: isDark ? Colors.black : Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () => onChat(livePeer),
+                              child: Text('Chat', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12)),
+                            ),
+                            const SizedBox(width: 6),
+                            IconButton(
+                              icon: const Icon(Icons.link_off_rounded, color: AppColors.error, size: 20),
+                              onPressed: () => onDisconnect(savedFriend.id),
+                              tooltip: 'Disconnect',
+                            ),
+                          ],
+                        )
+                      : isConnecting
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withAlpha(20),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.warning),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Connecting',
+                                    style: GoogleFonts.inter(
+                                      color: AppColors.warning,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.getPrimary(context),
+                                    side: BorderSide(color: AppColors.getPrimary(context)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () => onConnect(savedFriend.id),
+                                  child: Text('Connect', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12)),
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.person_remove_outlined,
+                                    color: AppColors.getSubtext(context),
+                                    size: 18,
+                                  ),
+                                  onPressed: () => _showForgetFriendDialog(context, ref, savedFriend),
+                                  tooltip: 'Forget Friend',
+                                ),
+                              ],
+                            ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // ── Nearby Friends Section ─────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1233,6 +1518,66 @@ class _IncomingMessageBanner extends StatelessWidget {
 
 // ── Helper Dialogs ──────────────────────────────────────────────────────────
 
+void _showDeleteChatDialog(BuildContext context, WidgetRef ref, PeerUiModel friend) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.getCard(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.getBorder(context)),
+      ),
+      title: Text(
+        'Delete Chat?',
+        style: GoogleFonts.inter(
+          color: AppColors.getText(context),
+          fontWeight: FontWeight.w700,
+          fontSize: 17,
+        ),
+      ),
+      content: Text(
+        'Do you want to delete all messages with "${friend.name}"? This friend will still remain saved in your Saved Friends.',
+        style: GoogleFonts.inter(
+          color: AppColors.getSubtext(context),
+          fontSize: 14,
+          height: 1.4,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.inter(
+              color: AppColors.getSubtext(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () {
+            Navigator.pop(ctx);
+            ref.read(meshProvider.notifier).deleteConversation(friend.id);
+          },
+          child: Text(
+            'Delete Chat',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 void _showForgetFriendDialog(BuildContext context, WidgetRef ref, PeerUiModel friend) {
   showDialog(
     context: context,
@@ -1251,7 +1596,7 @@ void _showForgetFriendDialog(BuildContext context, WidgetRef ref, PeerUiModel fr
         ),
       ),
       content: Text(
-        'Are you sure you want to remove "${friend.name}" from your saved friends list?',
+        'Remove "${friend.name}" from your Saved Friends list? (You can reconnect anytime via QR code or Nearby search).',
         style: GoogleFonts.inter(
           color: AppColors.getSubtext(context),
           fontSize: 14,

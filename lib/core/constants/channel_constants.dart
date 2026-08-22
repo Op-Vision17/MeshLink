@@ -13,7 +13,12 @@ abstract class ChannelConstants {
   static const String methodIsLocationServiceEnabled = 'isLocationServiceEnabled';
   static const String methodRequestEnableLocationService =
       'requestEnableLocationService';
+  static const String methodIsWifiEnabled = 'isWifiEnabled';
+  static const String methodRequestEnableWifi = 'requestEnableWifi';
   static const String methodUpdateUserProfile = 'updateUserProfile';
+  static const String methodOpenFile = 'openFile';
+  static const String methodSaveFileToDownloads = 'saveFileToDownloads';
+  static const String methodCreateVideoThumbnail = 'createVideoThumbnail';
   static const String methodGetLocalNodeId = 'getLocalNodeId';
 
   // Event Types

@@ -5,4 +5,5 @@ abstract class MessageRepository {
   Future<List<ChatMessage>> getMessagesForConversation(String conversationId);
   Stream<List<ChatMessage>> watchMessagesForConversation(String conversationId);
   Future<void> updateMessageStatus(String messageId, MessageStatus status);
+  Future<void> deleteConversation(String conversationId);
 }

@@ -4,7 +4,10 @@ enum PacketType {
   text,
   ack,
   discovery,
-  heartbeat;
+  heartbeat,
+  fileMeta,
+  fileChunk,
+  fileAck;
 
   String toRawString() {
     switch (this) {
@@ -16,6 +19,12 @@ enum PacketType {
         return 'DISCOVERY';
       case PacketType.heartbeat:
         return 'HEARTBEAT';
+      case PacketType.fileMeta:
+        return 'FILE_META';
+      case PacketType.fileChunk:
+        return 'FILE_CHUNK';
+      case PacketType.fileAck:
+        return 'FILE_ACK';
     }
   }
 
@@ -27,6 +36,12 @@ enum PacketType {
         return PacketType.discovery;
       case 'HEARTBEAT':
         return PacketType.heartbeat;
+      case 'FILE_META':
+        return PacketType.fileMeta;
+      case 'FILE_CHUNK':
+        return PacketType.fileChunk;
+      case 'FILE_ACK':
+        return PacketType.fileAck;
       case 'TEXT':
       default:
         return PacketType.text;

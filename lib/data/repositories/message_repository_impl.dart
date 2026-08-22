@@ -46,4 +46,9 @@ class MessageRepositoryImpl implements MessageRepository {
       await _localDataSource.saveMessage(updated);
     }
   }
+
+  @override
+  Future<void> deleteConversation(String conversationId) async {
+    await _localDataSource.deleteConversation(conversationId);
+  }
 }

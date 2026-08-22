@@ -8,6 +8,7 @@ class PermissionState {
   final bool allGranted;
   final bool isBatteryOptimizationIgnored;
   final bool isBluetoothEnabled;
+  final bool isWifiEnabled;
   final bool isLocationServiceEnabled;
   final Map<Permission, PermissionStatus> statuses;
 
@@ -16,6 +17,7 @@ class PermissionState {
     required this.allGranted,
     this.isBatteryOptimizationIgnored = false,
     this.isBluetoothEnabled = true,
+    this.isWifiEnabled = true,
     this.isLocationServiceEnabled = true,
     required this.statuses,
   });
@@ -25,6 +27,7 @@ class PermissionState {
     bool? allGranted,
     bool? isBatteryOptimizationIgnored,
     bool? isBluetoothEnabled,
+    bool? isWifiEnabled,
     bool? isLocationServiceEnabled,
     Map<Permission, PermissionStatus>? statuses,
   }) {
@@ -34,6 +37,7 @@ class PermissionState {
       isBatteryOptimizationIgnored:
           isBatteryOptimizationIgnored ?? this.isBatteryOptimizationIgnored,
       isBluetoothEnabled: isBluetoothEnabled ?? this.isBluetoothEnabled,
+      isWifiEnabled: isWifiEnabled ?? this.isWifiEnabled,
       isLocationServiceEnabled:
           isLocationServiceEnabled ?? this.isLocationServiceEnabled,
       statuses: statuses ?? this.statuses,
@@ -50,6 +54,7 @@ class PermissionNotifier extends StateNotifier<PermissionState> {
           allGranted: false,
           isBatteryOptimizationIgnored: false,
           isBluetoothEnabled: true,
+          isWifiEnabled: true,
           isLocationServiceEnabled: true,
           statuses: {},
         )) {
@@ -80,6 +85,7 @@ class PermissionNotifier extends StateNotifier<PermissionState> {
 
     final batteryOptStatus = await Permission.ignoreBatteryOptimizations.status;
     final btEnabled = await _platformDataSource.isBluetoothEnabled();
+    final wifiEnabled = await _platformDataSource.isWifiEnabled();
     final locEnabled = await _platformDataSource.isLocationServiceEnabled();
 
     state = PermissionState(
@@ -87,6 +93,7 @@ class PermissionNotifier extends StateNotifier<PermissionState> {
       allGranted: allGranted,
       isBatteryOptimizationIgnored: batteryOptStatus.isGranted,
       isBluetoothEnabled: btEnabled,
+      isWifiEnabled: wifiEnabled,
       isLocationServiceEnabled: locEnabled,
       statuses: statuses,
     );
@@ -108,6 +115,22 @@ class PermissionNotifier extends StateNotifier<PermissionState> {
     return success;
   }
 
+  Future<bool> checkWifiState() async {
+    final wifiEnabled = await _platformDataSource.isWifiEnabled();
+    state = state.copyWith(isWifiEnabled: wifiEnabled);
+    return wifiEnabled;
+  }
+
+  Future<bool> requestEnableWifi() async {
+    final success = await _platformDataSource.requestEnableWifi();
+    for (int i = 0; i < 7; i++) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final enabled = await checkWifiState();
+      if (enabled) return true;
+    }
+    return success;
+  }
+
   Future<bool> checkLocationServiceState() async {
     final locEnabled = await _platformDataSource.isLocationServiceEnabled();
     state = state.copyWith(isLocationServiceEnabled: locEnabled);
@@ -124,6 +147,27 @@ class PermissionNotifier extends StateNotifier<PermissionState> {
   Future<void> requestBatteryOptimizationExemption() async {
     final status = await Permission.ignoreBatteryOptimizations.request();
     state = state.copyWith(isBatteryOptimizationIgnored: status.isGranted);
+  }
+
+  // Pre-flight check before discovery / connect: automatically triggers system prompts if OFF
+  Future<bool> ensureRadiosAndPermissionsReady() async {
+    await checkAndRequestPermissions();
+    if (!state.allGranted) {
+      return false;
+    }
+    final btOk = await checkBluetoothState();
+    if (!btOk) {
+      await requestEnableBluetooth();
+    }
+    final wifiOk = await checkWifiState();
+    if (!wifiOk) {
+      await requestEnableWifi();
+    }
+    final locOk = await checkLocationServiceState();
+    if (!locOk) {
+      await requestEnableLocationService();
+    }
+    return btOk && wifiOk;
   }
 }
 

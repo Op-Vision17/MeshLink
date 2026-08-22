@@ -122,6 +122,28 @@ class PlatformChannelDataSource {
     }
   }
 
+  Future<bool> isWifiEnabled() async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodIsWifiEnabled,
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> requestEnableWifi() async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodRequestEnableWifi,
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> updateUserProfile(String displayName, int avatarIndex) async {
     try {
       final result = await _methodChannel.invokeMethod<bool>(
@@ -134,6 +156,45 @@ class PlatformChannelDataSource {
       return result ?? false;
     } on PlatformException catch (_) {
       return false;
+    }
+  }
+
+  Future<bool> openFile(String filePath) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodOpenFile,
+        {'filePath': filePath},
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<String?> saveFileToDownloads(String filePath, String fileName) async {
+    try {
+      final result = await _methodChannel.invokeMethod<String>(
+        ChannelConstants.methodSaveFileToDownloads,
+        {
+          'filePath': filePath,
+          'fileName': fileName,
+        },
+      );
+      return result;
+    } on PlatformException catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> createVideoThumbnail(String videoPath) async {
+    try {
+      final result = await _methodChannel.invokeMethod<String>(
+        ChannelConstants.methodCreateVideoThumbnail,
+        {'videoPath': videoPath},
+      );
+      return result;
+    } on PlatformException catch (_) {
+      return null;
     }
   }
 

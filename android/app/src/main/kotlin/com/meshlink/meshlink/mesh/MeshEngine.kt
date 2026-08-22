@@ -692,4 +692,156 @@ class MeshEngine(private val context: Context) {
             false
         }
     }
+
+    /**
+     * Checks if Wi-Fi is enabled on the device.
+     */
+    fun isWifiEnabled(): Boolean {
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+        return wifiManager?.isWifiEnabled == true
+    }
+
+    /**
+     * Prompts user to enable Wi-Fi via system settings/panel.
+     */
+    fun requestEnableWifi(): Boolean {
+        return try {
+            val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                android.content.Intent(android.provider.Settings.Panel.ACTION_WIFI).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            } else {
+                android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            }
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch Wi-Fi settings: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Opens a local file (e.g. video, photo, pdf, doc, zip) using the system app chooser ("Open with...").
+     */
+    fun openFile(filePath: String): Boolean {
+        return try {
+            val file = java.io.File(filePath)
+            if (!file.exists()) {
+                Log.e(TAG, "openFile: File does not exist at $filePath")
+                return false
+            }
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val extension = if (filePath.contains(".")) {
+                filePath.substringAfterLast(".").lowercase()
+            } else ""
+            val mimeType = when (extension) {
+                "pdf" -> "application/pdf"
+                "doc", "docx" -> "application/msword"
+                "xls", "xlsx" -> "application/vnd.ms-excel"
+                "ppt", "pptx" -> "application/vnd.ms-powerpoint"
+                "zip", "rar", "7z" -> "application/zip"
+                "apk" -> "application/vnd.android.package-archive"
+                "mp4", "mkv", "mov", "avi", "3gp", "webm" -> "video/*"
+                "mp3", "wav", "m4a", "aac", "ogg", "flac" -> "audio/*"
+                "jpg", "jpeg", "png", "webp", "gif" -> "image/*"
+                "txt" -> "text/plain"
+                else -> android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*"
+            }
+
+            val viewIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, mimeType)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooserIntent = android.content.Intent.createChooser(viewIntent, "Open with").apply {
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooserIntent)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "openFile failed: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Copies a file to internal shared storage (/Download/MeshLink/) and registers with MediaScanner.
+     */
+    fun saveFileToDownloads(filePath: String, fileName: String): String? {
+        return try {
+            val srcFile = java.io.File(filePath)
+            if (!srcFile.exists()) return null
+
+            val downloadsDir = java.io.File(
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
+                "MeshLink"
+            )
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs()
+            }
+
+            val finalName = if (fileName.isNotBlank()) fileName else srcFile.name
+            val destFile = java.io.File(downloadsDir, finalName)
+
+            srcFile.inputStream().use { input ->
+                destFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            // Trigger MediaScanner so Gallery / File Manager sees it immediately
+            android.media.MediaScannerConnection.scanFile(
+                context,
+                arrayOf(destFile.absolutePath),
+                null
+            ) { path, uri ->
+                Log.i(TAG, "MediaScanner scanned: path=$path uri=$uri")
+            }
+
+            destFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "saveFileToDownloads failed: ${e.message}", e)
+            null
+        }
+    }
+
+    /**
+     * Generates a JPEG thumbnail from a local video file.
+     */
+    fun createVideoThumbnail(videoPath: String): String? {
+        return try {
+            val file = java.io.File(videoPath)
+            if (!file.exists()) return null
+
+            val thumbBitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                android.media.ThumbnailUtils.createVideoThumbnail(file, android.util.Size(512, 384), null)
+            } else {
+                @Suppress("DEPRECATION")
+                android.media.ThumbnailUtils.createVideoThumbnail(
+                    videoPath,
+                    android.provider.MediaStore.Images.Thumbnails.MINI_KIND
+                )
+            } ?: return null
+
+            val cacheDir = java.io.File(context.cacheDir, "thumbnails")
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+
+            val thumbFile = java.io.File(cacheDir, "thumb_${file.nameWithoutExtension}.jpg")
+            java.io.FileOutputStream(thumbFile).use { out ->
+                thumbBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+            }
+
+            thumbFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "createVideoThumbnail failed: ${e.message}", e)
+            null
+        }
+    }
 }

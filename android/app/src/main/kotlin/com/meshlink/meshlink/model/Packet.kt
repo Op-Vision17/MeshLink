@@ -7,7 +7,10 @@ enum class PacketType {
     ACK,
     DISCOVERY,
     HEARTBEAT,
-    HANDSHAKE;
+    HANDSHAKE,
+    FILE_META,
+    FILE_CHUNK,
+    FILE_ACK;
 
     companion object {
         fun fromString(value: String): PacketType {

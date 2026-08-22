@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/datasources/file_transfer_manager.dart';
 import '../../data/datasources/isar_datasource.dart';
 import '../../data/datasources/platform_channel_datasource.dart';
 import '../../data/models/packet_model.dart';
@@ -182,6 +185,8 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
   final MessageRepository _messageRepository;
   final SyncPeerListUseCase _syncPeerListUseCase;
   final PeerRepository _peerRepository;
+  final FileTransferManager _fileTransferManager = FileTransferManager();
+
   StreamSubscription<MeshEvent>? _eventSubscription;
 
   MeshNotifier(
@@ -192,68 +197,69 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
     this._peerRepository,
   ) : super(const MeshUiState(
           isDiscovering: false,
-          statusMessage: 'Ready',
+          statusMessage: 'MeshLink initialized',
           peers: [],
+          savedPeers: [],
           receivedPackets: [],
-          chatMessages: [],
-          debugLogs: [],
         )) {
-    _initPersistenceAndEvents();
+    _init();
   }
 
   void _addDebugLog(String log) {
-    final now = DateTime.now();
-    final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-    final entry = '[$timeStr] $log';
-    debugPrint('[MeshLink Debug] $entry');
-    state = state.copyWith(debugLogs: [...state.debugLogs, entry]);
+    debugPrint('[MeshEngine] $log');
+    final updated = [...state.debugLogs, '${DateTime.now().toIso8601String().substring(11, 19)} $log'];
+    if (updated.length > 50) updated.removeAt(0);
+    state = state.copyWith(debugLogs: updated);
   }
 
-  void clearDebugLogs() {
-    state = state.copyWith(debugLogs: [], errorLog: []);
-  }
-
-  Future<void> _initPersistenceAndEvents() async {
-    _listenToEvents();
+  Future<void> _init() async {
     try {
-      final savedPeers = await _peerRepository.getPeers();
-      final peerModels = savedPeers
-          .map((p) => PeerUiModel(
-                id: p.id,
-                name: p.name,
-                rssi: -60,
-                connectionType: 'Saved Friend',
-                wifiState: PeerWifiState.disconnected,
-              ))
-          .toList();
-      state = state.copyWith(savedPeers: peerModels);
+      final savedNodes = await _peerRepository.getPeers();
+      final savedUi = savedNodes.map((n) {
+        return PeerUiModel(
+          id: n.id,
+          name: n.name,
+          rssi: n.rssi,
+          connectionType: n.connectionType,
+          wifiState: PeerWifiState.disconnected,
+        );
+      }).toList();
+
+      final List<ChatMessage> allPastMessages = [];
+      for (final node in savedNodes) {
+        final msgs = await _messageRepository.getMessagesForConversation(normalizeId(node.id));
+        allPastMessages.addAll(msgs);
+      }
+
+      state = state.copyWith(
+        savedPeers: savedUi,
+        chatMessages: allPastMessages,
+      );
     } catch (e) {
-      debugPrint('Error loading saved peers: $e');
+      _addDebugLog('Failed to load saved peers and messages: $e');
     }
 
     try {
       final nodeId = await _repository.getLocalNodeId();
-      if (nodeId != null && nodeId.isNotEmpty) {
-        state = state.copyWith(localNodeId: nodeId);
-        debugPrint('[MeshLink] Local Node ID initialized: $nodeId');
-      }
+      state = state.copyWith(localNodeId: nodeId);
+      _addDebugLog('Local Node ID: $nodeId');
     } catch (e) {
-      debugPrint('Error getting local Node ID: $e');
+      _addDebugLog('Could not get local node ID: $e');
     }
-  }
 
-  void _listenToEvents() {
     _eventSubscription = _repository.meshEvents.listen(
-      _handleEvent,
-      onError: (Object err) {
-        final errStr = 'Event stream error: $err';
+      (event) {
+        _handleEvent(event);
+      },
+      onError: (error) {
+        final errStr = 'Event stream error: $error';
         _addDebugLog('❌ $errStr');
         state = state.copyWith(statusMessage: errStr);
       },
     );
   }
 
-  void _handleEvent(MeshEvent event) {
+  void _handleEvent(MeshEvent event) async {
     switch (event) {
       case PeerFoundEvent():
         _addDebugLog('🔍 Peer Found: ${event.peerName} (${event.peerId}) RSSI=${event.rssi}');
@@ -317,8 +323,100 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       case PacketReceivedEvent():
         final cleanSender = normalizeId(event.packet.senderId);
         final cleanReceiver = normalizeId(event.packet.receiverId);
-        _addDebugLog('📩 Packet Received from $cleanSender (${event.packet.packetType})');
         final conversationId = cleanSender.isNotEmpty ? cleanSender : 'broadcast';
+        _addDebugLog('📩 Packet Received from $cleanSender (${event.packet.packetType})');
+
+        if (event.packet.packetType == PacketType.fileMeta) {
+          try {
+            final meta = FileMetadataPayload.fromJson(event.packet.payload);
+            await _fileTransferManager.handleIncomingMeta(meta);
+            final msgType = MessageType.values.firstWhere(
+              (e) => e.name == meta.messageType,
+              orElse: () => MessageType.file,
+            );
+            final fileMsg = ChatMessage(
+              id: meta.fileId,
+              senderId: cleanSender,
+              receiverId: cleanReceiver,
+              content: meta.fileName,
+              timestamp: DateTime.fromMillisecondsSinceEpoch(event.packet.timestamp),
+              status: MessageStatus.sending,
+              messageType: msgType,
+              fileName: meta.fileName,
+              fileSize: meta.totalBytes,
+              progress: 0.0,
+            );
+            state = state.copyWith(
+              chatMessages: [...state.chatMessages, fileMsg],
+              statusMessage: 'Incoming file: ${meta.fileName}',
+            );
+          } catch (e) {
+            _addDebugLog('Failed to parse FILE_META: $e');
+          }
+          return;
+        }
+
+        if (event.packet.packetType == PacketType.fileChunk) {
+          try {
+            final chunk = FileChunkPayload.fromJson(event.packet.payload);
+            final result = await _fileTransferManager.handleIncomingChunk(chunk);
+            if (result != null) {
+              final updated = state.chatMessages.map((m) {
+                if (m.id == chunk.fileId) {
+                  return m.copyWith(
+                    progress: result.progress,
+                    localFilePath: result.isCompleted ? result.localPath : m.localFilePath,
+                    status: result.isCompleted ? MessageStatus.delivered : MessageStatus.sending,
+                  );
+                }
+                return m;
+              }).toList();
+
+              state = state.copyWith(chatMessages: updated);
+
+              if (result.isCompleted && result.localPath != null) {
+                final completedMsg = state.chatMessages.firstWhere((m) => m.id == chunk.fileId);
+                await _messageRepository.saveMessage(completedMsg, conversationId: conversationId);
+
+                // Send FILE_ACK back
+                await _repository.sendPacket(PacketModel(
+                  messageId: 'ack_${chunk.fileId}',
+                  senderId: 'local',
+                  receiverId: cleanSender,
+                  timestamp: DateTime.now().millisecondsSinceEpoch,
+                  packetType: PacketType.fileAck,
+                  payload: jsonEncode({'fileId': chunk.fileId, 'status': 'DELIVERED'}),
+                ));
+              }
+            }
+          } catch (e) {
+            _addDebugLog('Failed to process FILE_CHUNK: $e');
+          }
+          return;
+        }
+
+        if (event.packet.packetType == PacketType.fileAck) {
+          try {
+            final map = jsonDecode(event.packet.payload) as Map<String, dynamic>;
+            final ackFileId = map['fileId'] as String?;
+            if (ackFileId != null) {
+              final updated = state.chatMessages.map((m) {
+                if (m.id == ackFileId) {
+                  final acked = m.copyWith(status: MessageStatus.delivered, progress: 1.0);
+                  _messageRepository.saveMessage(acked, conversationId: conversationId);
+                  return acked;
+                }
+                return m;
+              }).toList();
+              state = state.copyWith(chatMessages: updated);
+            }
+          } catch (e) {
+            _addDebugLog('Failed to parse FILE_ACK: $e');
+          }
+          return;
+        }
+
+        // Standard text packet
         final newMsg = ChatMessage(
           id: event.packet.messageId,
           senderId: cleanSender,
@@ -326,12 +424,32 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
           content: event.packet.payload,
           timestamp: DateTime.fromMillisecondsSinceEpoch(event.packet.timestamp),
           status: MessageStatus.delivered,
+          messageType: MessageType.text,
         );
         _messageRepository.saveMessage(newMsg, conversationId: conversationId);
+
+        final senderName = state.peers.firstWhere(
+          (p) => p.id == event.packet.senderId || normalizeId(p.id) == cleanSender,
+          orElse: () => state.savedPeers.firstWhere(
+            (sp) => sp.id == event.packet.senderId || normalizeId(sp.id) == cleanSender,
+            orElse: () => PeerUiModel(id: cleanSender, name: 'Friend $cleanSender', rssi: -60, connectionType: 'Direct'),
+          ),
+        ).name;
+
+        final senderPeerNode = PeerNode(
+          id: cleanSender,
+          name: senderName,
+          rssi: -60,
+          connectionType: 'Direct',
+          lastSeen: DateTime.now(),
+        );
+        _peerRepository.savePeer(senderPeerNode);
+        _upsertSavedPeer(senderPeerNode);
+
         state = state.copyWith(
           receivedPackets: [...state.receivedPackets, event.packet],
           chatMessages: [...state.chatMessages, newMsg],
-          statusMessage: 'Packet ← $cleanSender',
+          statusMessage: 'Message ← $cleanSender',
         );
 
       case MeshErrorEvent():
@@ -346,12 +464,30 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
 
   // ── Peer helpers ─────────────────────────────────────────────────────────
 
+  void _upsertSavedPeer(PeerNode peer) {
+    final norm = normalizeId(peer.id);
+    final idx = state.savedPeers.indexWhere((p) => p.id == peer.id || normalizeId(p.id) == norm);
+    final updatedSaved = List<PeerUiModel>.from(state.savedPeers);
+    final uiModel = PeerUiModel(
+      id: peer.id,
+      name: peer.name,
+      rssi: peer.rssi,
+      connectionType: peer.connectionType,
+      wifiState: PeerWifiState.disconnected,
+    );
+    if (idx >= 0) {
+      updatedSaved[idx] = updatedSaved[idx].copyWith(name: peer.name);
+    } else {
+      updatedSaved.add(uiModel);
+    }
+    state = state.copyWith(savedPeers: updatedSaved);
+  }
+
   void _upsertPeer(PeerUiModel peer) {
     final norm = normalizeId(peer.id);
     final idx = state.peers.indexWhere((p) => p.id == peer.id || normalizeId(p.id) == norm);
     final updatedLive = List<PeerUiModel>.from(state.peers);
     if (idx >= 0) {
-      // Preserve Wi-Fi state and groupOwnerIp on re-advertisement
       updatedLive[idx] = updatedLive[idx].copyWith(
         name: peer.name,
         rssi: peer.rssi,
@@ -377,8 +513,8 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       return (p.id == peerId || normalizeId(p.id) == norm) ? update(p) : p;
     }).toList();
 
-    final updatedSaved = state.savedPeers.map((p) {
-      return (p.id == peerId || normalizeId(p.id) == norm) ? update(p) : p;
+    final updatedSaved = state.savedPeers.map((sp) {
+      return (sp.id == peerId || normalizeId(sp.id) == norm) ? update(sp) : sp;
     }).toList();
 
     state = state.copyWith(peers: updatedLive, savedPeers: updatedSaved);
@@ -402,6 +538,21 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       state = state.copyWith(savedPeers: updatedSaved);
     } catch (e) {
       debugPrint('Failed to forget friend $peerId: $e');
+    }
+  }
+
+  Future<void> deleteConversation(String peerId) async {
+    try {
+      final norm = normalizeId(peerId);
+      await _messageRepository.deleteConversation(norm);
+      final updatedMsgs = state.chatMessages.where((m) =>
+          m.senderId != peerId &&
+          normalizeId(m.senderId) != norm &&
+          m.receiverId != peerId &&
+          normalizeId(m.receiverId) != norm).toList();
+      state = state.copyWith(chatMessages: updatedMsgs);
+    } catch (e) {
+      debugPrint('Failed to delete conversation with $peerId: $e');
     }
   }
 
@@ -454,33 +605,160 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       content: payload,
       timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
       status: MessageStatus.sending,
+      messageType: MessageType.text,
     );
 
     state = state.copyWith(
       chatMessages: [...state.chatMessages, chatMsg],
-      statusMessage: 'Sending packet to $receiverId…',
+      statusMessage: 'Sending message to $receiverId…',
     );
 
     final success = await _sendMessageUseCase.execute(packet);
-    
-    // Update message status
+
+    final targetName = state.peers.firstWhere(
+      (p) => p.id == receiverId || normalizeId(p.id) == normalizeId(receiverId),
+      orElse: () => state.savedPeers.firstWhere(
+        (sp) => sp.id == receiverId || normalizeId(sp.id) == normalizeId(receiverId),
+        orElse: () => PeerUiModel(id: receiverId, name: 'Friend ${normalizeId(receiverId)}', rssi: -60, connectionType: 'Direct'),
+      ),
+    ).name;
+
+    final peerNode = PeerNode(
+      id: normalizeId(receiverId),
+      name: targetName,
+      rssi: -60,
+      connectionType: 'Direct',
+      lastSeen: DateTime.now(),
+    );
+    _peerRepository.savePeer(peerNode);
+    _upsertSavedPeer(peerNode);
+
     final updatedMessages = state.chatMessages.map((m) {
       if (m.id == msgId) {
-        return ChatMessage(
-          id: m.id,
-          senderId: m.senderId,
-          receiverId: m.receiverId,
-          content: m.content,
-          timestamp: m.timestamp,
-          status: success ? MessageStatus.sent : MessageStatus.failed,
-        );
+        return m.copyWith(status: success ? MessageStatus.sent : MessageStatus.failed);
       }
       return m;
     }).toList();
 
     state = state.copyWith(
       chatMessages: updatedMessages,
-      statusMessage: success ? 'Packet → $receiverId' : 'Failed to send packet',
+      statusMessage: success ? 'Message sent' : 'Failed to send message',
+    );
+  }
+
+  Future<void> sendMessage({
+    required String receiverId,
+    required String content,
+  }) async {
+    await sendPacket(receiverId: receiverId, payload: content);
+  }
+
+  // ── High-Speed Offline File Transfer ──────────────────────────────────────
+
+  Future<void> sendFile({
+    required String receiverId,
+    required File file,
+    required MessageType type,
+  }) async {
+    final fileId = 'file_${DateTime.now().millisecondsSinceEpoch}';
+    final meta = await _fileTransferManager.prepareFileForSend(
+      fileId: fileId,
+      file: file,
+      type: type,
+    );
+
+    final targetName = state.peers.firstWhere(
+      (p) => p.id == receiverId || normalizeId(p.id) == normalizeId(receiverId),
+      orElse: () => state.savedPeers.firstWhere(
+        (sp) => sp.id == receiverId || normalizeId(sp.id) == normalizeId(receiverId),
+        orElse: () => PeerUiModel(id: receiverId, name: 'Friend ${normalizeId(receiverId)}', rssi: -60, connectionType: 'Direct'),
+      ),
+    ).name;
+
+    final sendPeerNode = PeerNode(
+      id: normalizeId(receiverId),
+      name: targetName,
+      rssi: -60,
+      connectionType: 'Direct',
+      lastSeen: DateTime.now(),
+    );
+    _peerRepository.savePeer(sendPeerNode);
+    _upsertSavedPeer(sendPeerNode);
+
+    final cleanReceiver = normalizeId(receiverId);
+    final chatMsg = ChatMessage(
+      id: fileId,
+      senderId: 'local',
+      receiverId: receiverId,
+      content: meta.fileName,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sending,
+      messageType: type,
+      localFilePath: file.path,
+      fileName: meta.fileName,
+      fileSize: meta.totalBytes,
+      progress: 0.0,
+    );
+
+    state = state.copyWith(
+      chatMessages: [...state.chatMessages, chatMsg],
+      statusMessage: 'Sending ${meta.fileName}…',
+    );
+
+    // 1. Send FILE_META packet
+    final metaPacket = PacketModel(
+      messageId: 'meta_$fileId',
+      senderId: 'local',
+      receiverId: receiverId,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+      packetType: PacketType.fileMeta,
+      payload: meta.toJson(),
+    );
+
+    await _repository.sendPacket(metaPacket);
+
+    // 2. Stream 64KB Chunks
+    int sentChunks = 0;
+    await for (final chunk in _fileTransferManager.streamFileChunks(
+      fileId: fileId,
+      file: file,
+      totalChunks: meta.totalChunks,
+    )) {
+      final chunkPacket = PacketModel(
+        messageId: 'chk_${fileId}_${chunk.chunkIndex}',
+        senderId: 'local',
+        receiverId: receiverId,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+        packetType: PacketType.fileChunk,
+        payload: chunk.toJson(),
+      );
+
+      await _repository.sendPacket(chunkPacket);
+      sentChunks++;
+      final prog = (sentChunks / meta.totalChunks).clamp(0.0, 1.0);
+
+      final updated = state.chatMessages.map((m) {
+        if (m.id == fileId) {
+          return m.copyWith(progress: prog);
+        }
+        return m;
+      }).toList();
+      state = state.copyWith(chatMessages: updated);
+    }
+
+    // 3. Mark locally as sent
+    final finalSent = state.chatMessages.map((m) {
+      if (m.id == fileId) {
+        final sent = m.copyWith(status: MessageStatus.sent, progress: 1.0);
+        _messageRepository.saveMessage(sent, conversationId: cleanReceiver);
+        return sent;
+      }
+      return m;
+    }).toList();
+
+    state = state.copyWith(
+      chatMessages: finalSent,
+      statusMessage: 'Sent ${meta.fileName}',
     );
   }
 

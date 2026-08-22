@@ -24,7 +24,12 @@ object MeshConstants {
     const val METHOD_REQUEST_ENABLE_BLUETOOTH = "requestEnableBluetooth"
     const val METHOD_IS_LOCATION_SERVICE_ENABLED = "isLocationServiceEnabled"
     const val METHOD_REQUEST_ENABLE_LOCATION_SERVICE = "requestEnableLocationService"
+    const val METHOD_IS_WIFI_ENABLED = "isWifiEnabled"
+    const val METHOD_REQUEST_ENABLE_WIFI = "requestEnableWifi"
     const val METHOD_UPDATE_USER_PROFILE = "updateUserProfile"
+    const val METHOD_OPEN_FILE = "openFile"
+    const val METHOD_SAVE_FILE_TO_DOWNLOADS = "saveFileToDownloads"
+    const val METHOD_CREATE_VIDEO_THUMBNAIL = "createVideoThumbnail"
 
     // Event Types
     const val EVENT_PEER_FOUND = "peerFound"

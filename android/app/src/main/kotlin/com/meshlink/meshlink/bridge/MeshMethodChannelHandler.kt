@@ -61,11 +61,35 @@ class MeshMethodChannelHandler(private val engine: MeshEngine) : MethodChannel.M
                 val success = engine.requestEnableLocationService()
                 result.success(success)
             }
+            MeshConstants.METHOD_IS_WIFI_ENABLED -> {
+                val isEnabled = engine.isWifiEnabled()
+                result.success(isEnabled)
+            }
+            MeshConstants.METHOD_REQUEST_ENABLE_WIFI -> {
+                val success = engine.requestEnableWifi()
+                result.success(success)
+            }
             MeshConstants.METHOD_UPDATE_USER_PROFILE -> {
                 val displayName = call.argument<String>("displayName") ?: ""
                 val avatarIndex = call.argument<Int>("avatarIndex") ?: 0
                 val success = engine.updateUserProfile(displayName, avatarIndex)
                 result.success(success)
+            }
+            MeshConstants.METHOD_OPEN_FILE -> {
+                val filePath = call.argument<String>("filePath") ?: ""
+                val success = engine.openFile(filePath)
+                result.success(success)
+            }
+            MeshConstants.METHOD_SAVE_FILE_TO_DOWNLOADS -> {
+                val filePath = call.argument<String>("filePath") ?: ""
+                val fileName = call.argument<String>("fileName") ?: ""
+                val savedPath = engine.saveFileToDownloads(filePath, fileName)
+                result.success(savedPath)
+            }
+            MeshConstants.METHOD_CREATE_VIDEO_THUMBNAIL -> {
+                val videoPath = call.argument<String>("videoPath") ?: ""
+                val thumbPath = engine.createVideoThumbnail(videoPath)
+                result.success(thumbPath)
             }
             "getLocalNodeId" -> {
                 result.success(engine.localNodeId)
