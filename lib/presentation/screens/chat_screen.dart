@@ -859,8 +859,28 @@ class _MessageBubble extends ConsumerWidget {
                   ),
                 ),
 
-              // Progress bar during transfer
-              if (message.progress < 1.0) ...[
+              // Progress bar during transfer or Cancelled status
+              if (message.status == MessageStatus.failed) ...[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cancel_outlined, color: AppColors.error, size: 13),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Transfer cancelled',
+                        style: GoogleFonts.inter(
+                          color: AppColors.error,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (message.progress < 1.0 && message.status == MessageStatus.sending) ...[
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -875,17 +895,42 @@ class _MessageBubble extends ConsumerWidget {
                         minHeight: 4,
                         borderRadius: BorderRadius.circular(2),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Transferring…',
-                            style: GoogleFonts.inter(color: timeColor, fontSize: 10),
+                            '${(message.progress * 100).toInt()}% • Transferring…',
+                            style: GoogleFonts.inter(color: timeColor, fontSize: 10, fontWeight: FontWeight.w600),
                           ),
-                          Text(
-                            '${(message.progress * 100).toInt()}%',
-                            style: GoogleFonts.inter(color: timeColor, fontSize: 10, fontWeight: FontWeight.w700),
+                          GestureDetector(
+                            onTap: () {
+                              final targetId = isMe ? message.receiverId : message.senderId;
+                              ref.read(meshProvider.notifier).cancelFileTransfer(message.id, receiverId: targetId);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withAlpha(40),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.redAccent.withAlpha(100), width: 0.8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.close_rounded, color: Colors.redAccent, size: 12),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'Cancel',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.redAccent,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),

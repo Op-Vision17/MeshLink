@@ -156,21 +156,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
 
     return Scaffold(
-      backgroundColor: MeshColors.background,
+      backgroundColor: AppColors.getBg(context),
       appBar: AppBar(
         title: Text(
           'Edit Profile',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: MeshColors.textPrimary,
+            color: AppColors.getText(context),
           ),
         ),
         centerTitle: true,
-        backgroundColor: MeshColors.surface,
+        backgroundColor: AppColors.getCard(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.getText(context)),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -181,7 +181,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Text(
                 'Save',
                 style: GoogleFonts.inter(
-                  color: MeshColors.primaryLight,
+                  color: AppColors.getPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -191,7 +191,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: MeshColors.border),
+          child: Container(height: 0.5, color: AppColors.getBorder(context)),
         ),
       ),
       body: SingleChildScrollView(
@@ -237,7 +237,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: MeshColors.textPrimary,
+                      color: AppColors.getText(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -245,7 +245,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     activeBadge.label,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: MeshColors.textTertiary,
+                      color: AppColors.getSubtext(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -259,7 +259,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Text(
               'Display Name',
               style: GoogleFonts.inter(
-                color: MeshColors.textSecondary,
+                color: AppColors.getSubtext(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -268,11 +268,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             TextField(
               controller: _nameController,
               onChanged: (_) => setState(() {}),
-              style: GoogleFonts.inter(color: MeshColors.textPrimary),
+              style: GoogleFonts.inter(color: AppColors.getText(context)),
               decoration: InputDecoration(
                 hintText: 'Enter nickname…',
-                prefixIcon: const Icon(Icons.person_outline_rounded,
-                    color: MeshColors.primaryLight, size: 20),
+                prefixIcon: Icon(Icons.person_outline_rounded,
+                    color: AppColors.getPrimary(context), size: 20),
               ),
             ),
 
@@ -282,7 +282,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Text(
               'Status Message',
               style: GoogleFonts.inter(
-                color: MeshColors.textSecondary,
+                color: AppColors.getSubtext(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -290,11 +290,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _statusController,
-              style: GoogleFonts.inter(color: MeshColors.textPrimary),
+              style: GoogleFonts.inter(color: AppColors.getText(context)),
               decoration: InputDecoration(
                 hintText: 'Available on MeshLink…',
-                prefixIcon: const Icon(Icons.chat_bubble_outline_rounded,
-                    color: MeshColors.primaryLight, size: 20),
+                prefixIcon: Icon(Icons.chat_bubble_outline_rounded,
+                    color: AppColors.getPrimary(context), size: 20),
               ),
             ),
 
@@ -304,7 +304,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Text(
               'Choose Avatar Badge',
               style: GoogleFonts.inter(
-                color: MeshColors.textSecondary,
+                color: AppColors.getSubtext(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -372,7 +372,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               width: double.infinity,
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: MeshColors.primaryGradient,
+                  gradient: AppColors.primaryGradient,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: ElevatedButton.icon(
@@ -409,9 +409,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: MeshColors.surface,
+                color: AppColors.getCard(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: MeshColors.border),
+                border: Border.all(color: AppColors.getBorder(context)),
               ),
               child: Row(
                 children: [
@@ -419,11 +419,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: MeshColors.primary.withAlpha(20),
+                      color: AppColors.getPrimary(context).withAlpha(20),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.fingerprint_rounded,
-                        color: MeshColors.primaryLight, size: 20),
+                    child: Icon(Icons.fingerprint_rounded,
+                        color: AppColors.getPrimary(context), size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -433,7 +433,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           'Node Fingerprint ID',
                           style: GoogleFonts.inter(
-                            color: MeshColors.textTertiary,
+                            color: AppColors.getSubtext(context),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -442,7 +442,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           localNodeId,
                           style: GoogleFonts.inter(
-                            color: MeshColors.textPrimary,
+                            color: AppColors.getText(context),
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
@@ -452,8 +452,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded,
-                        color: MeshColors.textSecondary, size: 18),
+                    icon: Icon(Icons.copy_rounded,
+                        color: AppColors.getSubtext(context), size: 18),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: localNodeId));
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -278,30 +278,32 @@ class _QrScreenState extends ConsumerState<QrScreen>
       'avatar': profile.avatarIndex,
     });
 
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: MeshColors.background,
+      backgroundColor: AppColors.getBg(context),
       appBar: AppBar(
         title: Text(
           'QR Friend Pairing',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: MeshColors.textPrimary,
+            color: AppColors.getText(context),
           ),
         ),
         centerTitle: true,
-        backgroundColor: MeshColors.surface,
+        backgroundColor: AppColors.getCard(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.getText(context)),
           onPressed: () => Navigator.of(context).pop(),
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: MeshColors.primaryLight,
+          indicatorColor: AppColors.getPrimary(context),
           indicatorWeight: 3,
-          labelColor: MeshColors.primaryLight,
-          unselectedLabelColor: MeshColors.textTertiary,
+          labelColor: AppColors.getPrimary(context),
+          unselectedLabelColor: AppColors.getSubtext(context),
           labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
           tabs: const [
             Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18), text: 'Scan QR'),
@@ -336,12 +338,12 @@ class _QrScreenState extends ConsumerState<QrScreen>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: MeshColors.primaryLight,
+                      color: AppColors.getPrimary(context),
                       width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: MeshColors.primary.withAlpha(80),
+                        color: AppColors.getPrimary(context).withAlpha(80),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -358,20 +360,20 @@ class _QrScreenState extends ConsumerState<QrScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: MeshColors.surface.withAlpha(220),
+                    color: AppColors.getCard(context).withAlpha(220),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: MeshColors.border),
+                    border: Border.all(color: AppColors.getBorder(context)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.camera_alt_rounded,
-                          color: MeshColors.primaryLight, size: 18),
+                      Icon(Icons.camera_alt_rounded,
+                          color: AppColors.getPrimary(context), size: 18),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Point camera at friend\'s QR Code to pair',
                           style: GoogleFonts.inter(
-                            color: MeshColors.textPrimary,
+                            color: AppColors.getText(context),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -392,16 +394,16 @@ class _QrScreenState extends ConsumerState<QrScreen>
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: MeshColors.surface.withAlpha(220),
+                        color: AppColors.getCard(context).withAlpha(220),
                         shape: BoxShape.circle,
-                        border: Border.all(color: MeshColors.border),
+                        border: Border.all(color: AppColors.getBorder(context)),
                       ),
                       child: IconButton(
                         icon: Icon(
                           _isTorchOn
                               ? Icons.flash_on_rounded
                               : Icons.flash_off_rounded,
-                          color: _isTorchOn ? Colors.amber : Colors.white,
+                          color: _isTorchOn ? Colors.amber : AppColors.getText(context),
                         ),
                         onPressed: () {
                           _scannerController.toggleTorch();
@@ -415,13 +417,13 @@ class _QrScreenState extends ConsumerState<QrScreen>
                     const SizedBox(width: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: MeshColors.surface.withAlpha(220),
+                        color: AppColors.getCard(context).withAlpha(220),
                         shape: BoxShape.circle,
-                        border: Border.all(color: MeshColors.border),
+                        border: Border.all(color: AppColors.getBorder(context)),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.flip_camera_ios_rounded,
-                            color: Colors.white),
+                        icon: Icon(Icons.flip_camera_ios_rounded,
+                            color: AppColors.getText(context)),
                         onPressed: () => _scannerController.switchCamera(),
                         tooltip: 'Switch Camera',
                       ),
@@ -429,13 +431,13 @@ class _QrScreenState extends ConsumerState<QrScreen>
                     const SizedBox(width: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: MeshColors.surface.withAlpha(220),
+                        color: AppColors.getCard(context).withAlpha(220),
                         shape: BoxShape.circle,
-                        border: Border.all(color: MeshColors.border),
+                        border: Border.all(color: AppColors.getBorder(context)),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.photo_library_rounded,
-                            color: MeshColors.primaryLight),
+                        icon: Icon(Icons.photo_library_rounded,
+                            color: AppColors.getPrimary(context)),
                         onPressed: _pickQrFromGallery,
                         tooltip: 'Upload QR from Gallery',
                       ),
@@ -455,7 +457,7 @@ class _QrScreenState extends ConsumerState<QrScreen>
                 Text(
                   'Show this QR code to your friend to pair offline',
                   style: GoogleFonts.inter(
-                    color: MeshColors.textSecondary,
+                    color: AppColors.getSubtext(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -468,9 +470,10 @@ class _QrScreenState extends ConsumerState<QrScreen>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
+                    border: isDark ? null : Border.all(color: AppColors.getBorder(context)),
                     boxShadow: [
                       BoxShadow(
-                        color: MeshColors.primary.withAlpha(60),
+                        color: AppColors.getPrimary(context).withAlpha(40),
                         blurRadius: 24,
                         spreadRadius: 2,
                       ),

@@ -94,6 +94,22 @@ class IncomingFileAssembly {
 
 class FileTransferManager {
   final Map<String, IncomingFileAssembly> _activeIncoming = {};
+  final Set<String> _cancelledTransfers = {};
+
+  void cancelTransfer(String fileId) {
+    _cancelledTransfers.add(fileId);
+    final assembly = _activeIncoming.remove(fileId);
+    if (assembly != null) {
+      final f = File(assembly.targetPath);
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+    }
+  }
+
+  bool isTransferCancelled(String fileId) => _cancelledTransfers.contains(fileId);
 
   Future<String> getAttachmentsDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();

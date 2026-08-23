@@ -399,16 +399,25 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
           try {
             final map = jsonDecode(event.packet.payload) as Map<String, dynamic>;
             final ackFileId = map['fileId'] as String?;
+            final statusStr = map['status'] as String? ?? 'DELIVERED';
+
             if (ackFileId != null) {
-              final updated = state.chatMessages.map((m) {
-                if (m.id == ackFileId) {
-                  final acked = m.copyWith(status: MessageStatus.delivered, progress: 1.0);
-                  _messageRepository.saveMessage(acked, conversationId: conversationId);
-                  return acked;
-                }
-                return m;
-              }).toList();
-              state = state.copyWith(chatMessages: updated);
+              if (statusStr == 'CANCELLED') {
+                _fileTransferManager.cancelTransfer(ackFileId);
+                await _messageRepository.deleteMessage(ackFileId);
+                final updated = state.chatMessages.where((m) => m.id != ackFileId).toList();
+                state = state.copyWith(chatMessages: updated, statusMessage: 'Transfer cancelled');
+              } else {
+                final updated = state.chatMessages.map((m) {
+                  if (m.id == ackFileId) {
+                    final acked = m.copyWith(status: MessageStatus.delivered, progress: 1.0);
+                    _messageRepository.saveMessage(acked, conversationId: conversationId);
+                    return acked;
+                  }
+                  return m;
+                }).toList();
+                state = state.copyWith(chatMessages: updated);
+              }
             }
           } catch (e) {
             _addDebugLog('Failed to parse FILE_ACK: $e');
@@ -734,6 +743,23 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       file: file,
       totalChunks: meta.totalChunks,
     )) {
+      if (_fileTransferManager.isTransferCancelled(fileId)) {
+        await _messageRepository.deleteMessage(fileId);
+        final updated = state.chatMessages.where((m) => m.id != fileId).toList();
+        state = state.copyWith(chatMessages: updated, statusMessage: 'Transfer cancelled');
+        try {
+          await _repository.sendPacket(PacketModel(
+            messageId: 'cancel_$fileId',
+            senderId: 'local',
+            receiverId: receiverId,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+            packetType: PacketType.fileAck,
+            payload: jsonEncode({'fileId': fileId, 'status': 'CANCELLED'}),
+          ));
+        } catch (_) {}
+        return;
+      }
+
       final chunkPacket = PacketModel(
         messageId: 'chk_${fileId}_${chunk.chunkIndex}',
         senderId: 'local',
@@ -756,6 +782,13 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       state = state.copyWith(chatMessages: updated);
     }
 
+    if (_fileTransferManager.isTransferCancelled(fileId)) {
+      await _messageRepository.deleteMessage(fileId);
+      final updated = state.chatMessages.where((m) => m.id != fileId).toList();
+      state = state.copyWith(chatMessages: updated, statusMessage: 'Transfer cancelled');
+      return;
+    }
+
     // 3. Mark locally as sent
     final finalSent = state.chatMessages.map((m) {
       if (m.id == fileId) {
@@ -770,6 +803,28 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
       chatMessages: finalSent,
       statusMessage: 'Sent ${meta.fileName}',
     );
+  }
+
+  Future<void> cancelFileTransfer(String fileId, {required String receiverId}) async {
+    _fileTransferManager.cancelTransfer(fileId);
+    await _messageRepository.deleteMessage(fileId);
+    final updated = state.chatMessages.where((m) => m.id != fileId).toList();
+
+    state = state.copyWith(
+      chatMessages: updated,
+      statusMessage: 'Transfer cancelled',
+    );
+
+    try {
+      await _repository.sendPacket(PacketModel(
+        messageId: 'cancel_$fileId',
+        senderId: 'local',
+        receiverId: receiverId,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+        packetType: PacketType.fileAck,
+        payload: jsonEncode({'fileId': fileId, 'status': 'CANCELLED'}),
+      ));
+    } catch (_) {}
   }
 
   @override

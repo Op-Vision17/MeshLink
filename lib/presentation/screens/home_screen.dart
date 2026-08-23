@@ -433,7 +433,9 @@ class _ChatsTab extends StatelessWidget {
                 ? '📷 Photo'
                 : (lastMsg.messageType == MessageType.video
                     ? '🎥 Video'
-                    : (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content)))
+                    : (lastMsg.messageType == MessageType.file
+                        ? '📄 ${lastMsg.fileName ?? "Document"}'
+                        : (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content))))
             : (isConnected ? 'Direct link ready' : 'Tap to open chat');
 
         final timeStr = lastMsg != null
