@@ -155,6 +155,3 @@ MeshLink asks only for permissions essential to offline wireless operation:
 
 ---
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
