@@ -25,16 +25,13 @@ class _QrScreenState extends ConsumerState<QrScreen>
   late TabController _tabController;
   late MobileScannerController _scannerController;
 
-  final TextEditingController _friendCodeController = TextEditingController();
-  final TextEditingController _friendNameController = TextEditingController();
-
   bool _isProcessingScan = false;
   bool _isTorchOn = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _scannerController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
@@ -51,8 +48,6 @@ class _QrScreenState extends ConsumerState<QrScreen>
   void dispose() {
     _tabController.dispose();
     _scannerController.dispose();
-    _friendCodeController.dispose();
-    _friendNameController.dispose();
     super.dispose();
   }
 
@@ -168,17 +163,6 @@ class _QrScreenState extends ConsumerState<QrScreen>
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => ChatScreen(peer: newPeer)),
     );
-  }
-
-  void _handleAddFriendManual() {
-    final code = _friendCodeController.text.trim();
-    if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a friend Node ID or payload')),
-      );
-      return;
-    }
-    _handleDecodedQr(code);
   }
 
   Future<void> _pickQrFromGallery() async {
@@ -322,7 +306,6 @@ class _QrScreenState extends ConsumerState<QrScreen>
           tabs: const [
             Tab(icon: Icon(Icons.qr_code_scanner_rounded, size: 18), text: 'Scan QR'),
             Tab(icon: Icon(Icons.qr_code_rounded, size: 18), text: 'My QR'),
-            Tab(icon: Icon(Icons.keyboard_rounded, size: 18), text: 'Type Code'),
           ],
         ),
       ),
@@ -528,146 +511,6 @@ class _QrScreenState extends ConsumerState<QrScreen>
                         ),
                       ),
                     ],
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // Copy Payload Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: MeshColors.border),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: qrData));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Friend payload string copied to clipboard'),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.copy_rounded,
-                        size: 18, color: MeshColors.primaryLight),
-                    label: Text(
-                      'Copy Friend Payload String',
-                      style: GoogleFonts.inter(
-                        color: MeshColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Tab 3: Type Code Fallback ──────────────────────────────────
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                Text(
-                  'Enter your friend\'s Node ID or paste their QR payload string to add them manually.',
-                  style: GoogleFonts.inter(
-                    color: MeshColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Friend Display Name Field
-                Text(
-                  'Friend Name (Optional)',
-                  style: GoogleFonts.inter(
-                    color: MeshColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _friendNameController,
-                  style: GoogleFonts.inter(color: MeshColors.textPrimary),
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Sam',
-                    prefixIcon: Icon(Icons.person_outline_rounded,
-                        color: MeshColors.primaryLight, size: 20),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Friend Node ID / Payload Field
-                Text(
-                  'Node ID or Payload String',
-                  style: GoogleFonts.inter(
-                    color: MeshColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _friendCodeController,
-                  style: GoogleFonts.inter(color: MeshColors.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Paste 8-char Node ID or QR JSON…',
-                    prefixIcon: const Icon(Icons.qr_code_rounded,
-                        color: MeshColors.primaryLight, size: 20),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.content_paste_rounded,
-                          color: MeshColors.textSecondary, size: 18),
-                      onPressed: () async {
-                        final data = await Clipboard.getData(Clipboard.kTextPlain);
-                        if (data?.text != null) {
-                          _friendCodeController.text = data!.text!;
-                        }
-                      },
-                      tooltip: 'Paste',
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // Add Friend Button
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: MeshColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _handleAddFriendManual,
-                      icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-                      label: Text(
-                        'Pair & Add Friend',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ],
