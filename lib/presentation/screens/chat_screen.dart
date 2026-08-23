@@ -504,6 +504,69 @@ class _MessageBubble extends ConsumerWidget {
 
   const _MessageBubble({required this.message, required this.isMe});
 
+  void _showDeleteDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.getCard(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.getBorder(context)),
+        ),
+        title: Text(
+          'Delete Message',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            color: AppColors.getText(context),
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          'Do you want to delete this message?',
+          style: GoogleFonts.inter(
+            color: AppColors.getSubtext(context),
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(
+                color: AppColors.getSubtext(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(meshProvider.notifier).deleteMessage(message.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Message deleted'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(Icons.delete_outline_rounded, size: 16),
+            label: Text(
+              'Delete',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveToDownloads(BuildContext context, WidgetRef ref, String localPath, String fileName) async {
     final platformDs = ref.read(platformDataSourceProvider);
     final savedPath = await platformDs.saveFileToDownloads(localPath, fileName);
@@ -643,26 +706,28 @@ class _MessageBubble extends ConsumerWidget {
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: isMedia
-            ? const EdgeInsets.all(6)
-            : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isMe ? 18 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 18),
+      child: GestureDetector(
+        onLongPress: () => _showDeleteDialog(context, ref),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: isMedia
+              ? const EdgeInsets.all(6)
+              : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          constraints:
+              BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isMe ? 18 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 18),
+            ),
+            border: bubbleBorder,
           ),
-          border: bubbleBorder,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
             if (isMedia) ...[
               if (isImage && hasLocalFile)
                 Stack(
@@ -872,6 +937,7 @@ class _MessageBubble extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

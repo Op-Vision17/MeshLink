@@ -556,6 +556,16 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
     }
   }
 
+  Future<void> deleteMessage(String messageId) async {
+    try {
+      await _messageRepository.deleteMessage(messageId);
+      final updatedMsgs = state.chatMessages.where((m) => m.id != messageId).toList();
+      state = state.copyWith(chatMessages: updatedMsgs);
+    } catch (e) {
+      debugPrint('Failed to delete message $messageId: $e');
+    }
+  }
+
   Future<void> stopDiscovery() async {
     await _repository.stopDiscovery();
     state = state.copyWith(

@@ -9,16 +9,16 @@ class AppColors {
   static const Color surfaceElevatedDark = Color(0xFF1A212B);
   static const Color surfaceHighlightDark = Color(0xFF222B38);
 
-  // ── Light Surfaces ───────────────────────────────────────────────────────
-  static const Color backgroundLight = Color(0xFFF7F9FC);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceElevatedLight = Color(0xFFF1F5F9);
-  static const Color surfaceHighlightLight = Color(0xFFE2E8F0);
+  // ── Light Surfaces (Warm Beige & Cream) ──────────────────────────────────
+  static const Color backgroundLight = Color(0xFFF6F3EC);     // Soothing warm cream/beige
+  static const Color surfaceLight = Color(0xFFFDFBF7);        // Soft warm ivory card
+  static const Color surfaceElevatedLight = Color(0xFFEFEAE0); // Warm sand / oat elevation
+  static const Color surfaceHighlightLight = Color(0xFFE7E1D4);
 
   // ── Primaries (Emerald & Mint) ───────────────────────────────────────────
-  static const Color primaryLight = Color(0xFF00A982);       // Light mode emerald
+  static const Color primaryLight = Color(0xFF00896B);       // Rich emerald on cream
   static const Color primaryDark = Color(0xFF00D4A8);        // Dark mode mint
-  static const Color primaryLightSurface = Color(0xFFDDF7EF);
+  static const Color primaryLightSurface = Color(0xFFE4F4ED); // Subtle emerald tint
   static const Color primaryDarkSurface = Color(0xFF103B32);
 
   // Backwards compatible aliases
@@ -29,7 +29,7 @@ class AppColors {
   static const Color primary = primaryLight;
 
   // ── Accents ──────────────────────────────────────────────────────────────
-  static const Color accentLight = Color(0xFF3478F6);        // Light mode blue
+  static const Color accentLight = Color(0xFF2563EB);        // Light mode vibrant blue
   static const Color accentDark = Color(0xFF4DA3FF);         // Dark mode blue
   static const Color accent = accentLight;
 
@@ -47,9 +47,9 @@ class AppColors {
   static const Color textTertiaryDark = Color(0xFF667085);
   static const Color textDisabledDark = Color(0xFF475467);
 
-  static const Color textPrimaryLight = Color(0xFF111827);
-  static const Color textSecondaryLight = Color(0xFF667085);
-  static const Color textTertiaryLight = Color(0xFF98A2B3);
+  static const Color textPrimaryLight = Color(0xFF231F1C);   // Deep warm espresso
+  static const Color textSecondaryLight = Color(0xFF6B635B); // Warm muted walnut
+  static const Color textTertiaryLight = Color(0xFF9B9287);  // Warm taupe
 
   // Backwards compatible aliases
   static const Color textPrimary = textPrimaryDark;
@@ -59,7 +59,7 @@ class AppColors {
 
   // ── Borders ──────────────────────────────────────────────────────────────
   static const Color borderDark = Color(0xFF252C36);
-  static const Color borderLight = Color(0xFFE5E7EB);
+  static const Color borderLight = Color(0xFFE2DDD3);        // Soft warm beige border
   static const Color borderSubtleDark = Color(0xFF1A212B);
   static const Color borderAccent = Color(0x4000D4A8);
 

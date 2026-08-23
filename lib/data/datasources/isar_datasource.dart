@@ -71,6 +71,13 @@ class IsarDataSource {
     });
   }
 
+  Future<void> deleteMessage(String messageId) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.localMessages.filter().messageIdEqualTo(messageId).deleteAll();
+    });
+  }
+
   Future<void> savePeer(LocalPeer peer) async {
     final isar = await db;
     await isar.writeTxn(() async {
