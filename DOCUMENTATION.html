@@ -18,8 +18,8 @@
       themeVariables: {
         primaryColor: '#DDF7EF',
         primaryTextColor: '#103B32',
-        primaryBorderColor: '#00A982',
-        lineColor: '#3478F6',
+        primaryBorderColor: '#00896B',
+        lineColor: '#00896B',
         secondaryColor: '#F7F9FC',
         tertiaryColor: '#FFFFFF'
       }
@@ -27,15 +27,15 @@
   </script>
   <style>
     :root {
-      --primary: #00A982;
-      --primary-dark: #103B32;
+      --primary: #00896B;
+      --primary-dark: #0D3E35;
       --accent: #3478F6;
-      --bg: #F7F9FC;
-      --surface: #FFFFFF;
-      --text: #111827;
-      --subtext: #4B5563;
-      --border: #E5E7EB;
-      --code-bg: #F3F4F6;
+      --bg: #F6F3EC;
+      --surface: #FDFBF7;
+      --text: #231F1C;
+      --subtext: #6B635B;
+      --border: #E2DDD3;
+      --code-bg: #EFEAE0;
     }
 
     * {
@@ -53,7 +53,7 @@
     }
 
     .container {
-      max-width: 920px;
+      max-width: 960px;
       margin: 0 auto;
       background: var(--surface);
       padding: 50px 60px;
@@ -65,7 +65,7 @@
     .header-badge {
       display: inline-block;
       background: #DDF7EF;
-      color: #008767;
+      color: #00896B;
       font-weight: 700;
       font-size: 12px;
       padding: 4px 12px;
@@ -180,34 +180,8 @@
     .card-title {
       font-weight: 700;
       font-size: 15px;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .faq-box {
-      background: #FFFFFF;
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--primary);
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-    }
-
-    .faq-question {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--text);
+      color: var(--primary-dark);
       margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .faq-answer {
-      font-size: 14px;
-      color: #4B5563;
-      line-height: 1.6;
-      margin-bottom: 0;
     }
 
     code {
@@ -215,85 +189,38 @@
       font-size: 13px;
       background: var(--code-bg);
       padding: 2px 6px;
-      border-radius: 6px;
-      color: #D946EF;
+      border-radius: 4px;
+      color: #00896B;
     }
 
-    .btn-print {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px 24px;
-      font-size: 14px;
+    .faq-q {
       font-weight: 700;
-      border-radius: 30px;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 169, 130, 0.4);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      font-size: 16px;
+      margin-top: 20px;
+      margin-bottom: 6px;
     }
 
-    .btn-print:hover {
-      background: #008767;
-      transform: translateY(-2px);
-    }
-
-    @media print {
-      body {
-        background: #FFFFFF;
-        padding: 0;
-      }
-      .container {
-        box-shadow: none;
-        border: none;
-        padding: 0;
-        max-width: 100%;
-      }
-      .btn-print {
-        display: none;
-      }
-      .mermaid {
-        page-break-inside: avoid;
-      }
-      table {
-        page-break-inside: avoid;
-      }
-      .faq-box {
-        page-break-inside: avoid;
-      }
+    .faq-a {
+      color: var(--subtext);
+      font-size: 14px;
+      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="header-badge">Offline Mesh Technology</div>
-    <h1>🌐 MeshLink</h1>
-    <p class="lead">Complete Product, Architecture & Extended FAQ Documentation</p>
+    <span class="header-badge">Technical Specification & Product Manual</span>
+    <h1>🌐 MeshLink — Off-Grid Peer-to-Peer Messaging</h1>
+    <p class="lead">100% Serverless, Decentralized Mesh Messaging & High-Speed Media Sharing for Android without Internet, Cellular Data, or Central Servers.</p>
 
     <div class="divider"></div>
 
     <h2>📌 1. What is MeshLink?</h2>
-    <p>
-      <strong>MeshLink</strong> is an <strong>off-grid, decentralized, serverless peer-to-peer (P2P) messaging platform</strong> for Android devices.
-    </p>
-    <p>
-      It enables individuals to discover and chat with nearby friends <strong>completely without internet, cellular data, Wi-Fi routers, or telecom towers</strong>. Every smartphone acts as an autonomous wireless node using hardware Bluetooth Low Energy (BLE) and Wi-Fi Direct.
-    </p>
+    <p><strong>MeshLink</strong> is an open-source decentralized messaging app built with Flutter and Native Android Platform Channels. It enables nearby smartphones to communicate directly using <strong>Bluetooth Low Energy (BLE)</strong> for background discovery and <strong>Wi-Fi Direct (P2P Sockets)</strong> for high-speed chat, voice notes, photos, videos, and documents.</p>
 
-    <div class="divider"></div>
-
-    <h2>🎯 2. What Problem Does It Solve? (Real-World Use Cases)</h2>
-    <p>
-      Traditional apps (WhatsApp, Telegram, Signal) fail when cell towers are destroyed, overloaded, or out of range. MeshLink provides 100% resilient communication:
-    </p>
-
+    <h2>🎯 2. Real-World Use Cases</h2>
     <table>
       <thead>
         <tr>
@@ -303,213 +230,107 @@
       </thead>
       <tbody>
         <tr>
-          <td>🌪️ <strong>Natural Disasters & Power Outages</strong></td>
-          <td>When hurricanes, floods, or earthquakes take down cellular networks, MeshLink enables families and rescue teams to coordinate locally without any power grid.</td>
+          <td>🌪️ <strong>Disasters & Emergencies</strong></td>
+          <td>When power grids and cellular towers collapse, rescue teams and families stay connected off-grid.</td>
         </tr>
         <tr>
-          <td>🏔️ <strong>Remote Hiking, Trekking & Camping</strong></td>
-          <td>Zero cellular coverage in mountains and forests. MeshLink keeps hiking groups connected across hundreds of meters.</td>
+          <td>🏔️ <strong>Hiking & Backcountry</strong></td>
+          <td>Zero cellular coverage in remote trails. MeshLink enables group coordination up to 100+ meters.</td>
         </tr>
         <tr>
-          <td>🏟️ <strong>Crowded Stadiums, Festivals & Concerts</strong></td>
-          <td>When 50,000+ people jam cellular towers, MeshLink bypasses congested infrastructure via direct device-to-device radio links.</td>
+          <td>🏟️ <strong>Crowded Stadiums</strong></td>
+          <td>Bypasses congested 4G/5G mobile towers via direct device-to-device wireless links.</td>
         </tr>
         <tr>
-          <td>✈️ <strong>Flights & Subways</strong></td>
-          <td>Passengers can chat in airplane mode or in underground transit systems where mobile signals cannot reach.</td>
+          <td>✈️ <strong>Flights & Underground Metros</strong></td>
+          <td>Allows seamless offline messaging and file transfers in Airplane Mode.</td>
         </tr>
         <tr>
-          <td>🔒 <strong>Extreme Privacy & Anti-Surveillance</strong></td>
-          <td>Zero centralized accounts, zero server logs, and zero tracking. Messages travel only through physical radio waves.</td>
+          <td>🔒 <strong>Private Communications</strong></td>
+          <td>Zero server logs, zero phone numbers, and zero cloud intermediaries.</td>
         </tr>
       </tbody>
     </table>
 
-    <div class="divider"></div>
-
-    <h2>⚙️ 3. How Does It Work Under the Hood?</h2>
-    <p>MeshLink uses a hybrid dual-channel wireless pipeline designed for battery efficiency and maximum transmission speed:</p>
-
-    <div class="card">
-      <div class="card-title">1. Presence Discovery (Bluetooth Low Energy)</div>
-      <p style="margin:0; font-size:14px; color:#4B5563;">
-        When you tap <strong>"Find Friends Nearby"</strong>, your phone broadcasts an ultra-low-power BLE beacon containing your Display Name and an 8-character ID. Nearby phones detect you immediately—even in background mode.
-      </p>
+    <h2>⚡ 3. Dual-Channel Wireless Architecture</h2>
+    <div class="mermaid">
+      graph LR
+        A[Device A] -- "1. BLE Beacon Discovery" --> B[Device B]
+        A -- "2. Wi-Fi Direct P2P Tunnel" --> B
+        A -- "3. Real-time Chat & 64KB File Chunks" --> B
     </div>
 
-    <div class="card">
-      <div class="card-title">2. High-Speed Direct Tunnel (Wi-Fi Direct P2P)</div>
-      <p style="margin:0; font-size:14px; color:#4B5563;">
-        When you tap <strong>Connect</strong> or scan a QR code, the devices establish a high-speed Wi-Fi Direct P2P link (50 to 100+ meters range, line-of-sight).
-      </p>
-    </div>
-
-    <div class="card">
-      <div class="card-title">3. Real-Time Sockets & Local Storage</div>
-      <p style="margin:0; font-size:14px; color:#4B5563;">
-        Direct asynchronous TCP sockets stream messages, delivery acknowledgments (ACKs), and timestamps in real-time. Everything is persisted locally in on-device <strong>Isar NoSQL Database</strong>.
-      </p>
-    </div>
-
-    <div class="divider"></div>
-
-    <h2>📱 4. App User Experience & 3-Tab Layout</h2>
+    <h2>📱 4. Core Features</h2>
     <ul>
-      <li><strong>💬 Tab 1: Chats (WhatsApp Style)</strong>: Conversation list showing Friend's Display Name only (no avatars), latest message snippet, timestamp, <code>🟢 Connected</code> status dot, and "Forget Friend" delete option.</li>
-      <li><strong>📡 Tab 2: Explore (Discovery & Pairing)</strong>: Connection status pill (<code>● Searching</code> / <code>● Connected</code>), "Find Friends Nearby" search button, nearby discovered devices, and a bottom-right <strong>Scan / QR Floating Action Button (FAB)</strong>.</li>
-      <li><strong>⚙️ Tab 3: Settings</strong>: Real-time <strong>Display Name Edit & Save</strong>, <strong>Light ☀️ / Dark 🌙 Theme Switch</strong>, and About MeshLink info.</li>
-      <li><strong>📷 QR Screen</strong>: Quick pairing via camera QR scanner, personal QR code generator, and 8-character Friend Code.</li>
+      <li><strong>💬 WhatsApp-Style Conversations</strong>: Clean chat list with media snippets, timestamps, unread indicators, and hold-to-delete message support.</li>
+      <li><strong>📁 High-Speed Media & File Sharing</strong>: In-app video player, universal document viewer (PDF, DOC, ZIP, APK), and Save-to-Downloads.</li>
+      <li><strong>🛑 In-Flight Cancel Send</strong>: Interactive cancel button aborts chunk streaming and completely purges incomplete data from both devices.</li>
+      <li><strong>🎨 Warm Cream / Deep Dark Themes</strong>: Warm Cream/Beige (<code>#F6F3EC</code>) and Sleek Dark (<code>#0B0F14</code>) theme palettes.</li>
+      <li><strong>📷 Pure QR Pairing</strong>: Instant camera scanner and QR card pairing.</li>
+      <li><strong>🗄️ Embedded Isar NoSQL Storage</strong>: Safe offline persistence across app restarts.</li>
     </ul>
 
-    <div class="divider"></div>
+    <h2>🏛️ 5. Interaction Flowcharts</h2>
 
-    <h2>🏛️ 5. High-Level Architecture Flowchart</h2>
+    <h3>A. Discovery & Connection Handshake</h3>
     <div class="mermaid">
-graph TD
-    subgraph UI_Layer ["Flutter UI Layer"]
-        HomeScreen["HomeScreen (3 Tabs: Chats, Explore, Settings)"]
-        ChatScreen["ChatScreen (Real-time P2P Chat)"]
-        QrScreen["QrScreen (Scan / My QR / Code)"]
-        Riverpod["Riverpod State (MeshProvider, UserProfile, Permissions)"]
-    end
+      sequenceDiagram
+        autonumber
+        actor UserA as Device A
+        participant EngineA as MeshEngine A
+        participant EngineB as MeshEngine B
+        actor UserB as Device B
 
-    subgraph Data_Layer ["Domain & Storage Layer"]
-        Repo["MeshRepository & PeerRepository"]
-        IsarDB[("Isar Local Database")]
-        ChannelBridge["PlatformChannelDataSource"]
-    end
-
-    subgraph Native_Layer ["Kotlin Android Native Engine"]
-        Engine["MeshEngine.kt"]
-        BLE["BleAdvertiser.kt & BleScanner.kt"]
-        WiFiP2P["WifiDirectManager.kt"]
-        Sockets["MeshSocketServer.kt & MeshSocketClient.kt"]
-    end
-
-    HomeScreen --> Riverpod
-    ChatScreen --> Riverpod
-    QrScreen --> Riverpod
-    Riverpod --> Repo
-    Repo --> IsarDB
-    Repo --> ChannelBridge
-    ChannelBridge <==>|"MethodChannel / EventChannel"| Engine
-    Engine --> BLE
-    Engine --> WiFiP2P
-    Engine --> Sockets
+        UserA->>EngineA: Tap Find Friends
+        EngineA->>EngineB: BLE Advertisement Beacon
+        EngineB->>UserB: Display Peer A in Nearby List
+        UserA->>EngineA: Tap Connect
+        EngineA->>EngineB: Wi-Fi Direct P2P Group Handshake
+        EngineB->>EngineB: Start TCP Server (:8888)
+        EngineA->>EngineB: Connect TCP Client
+        EngineA->>UserA: 🟢 Connected
+        EngineB->>UserB: 🟢 Connected
     </div>
 
-    <div class="divider"></div>
-
-    <h2>🔄 6. Discovery & Connection Sequence</h2>
+    <h3>B. Chunked File Streaming & Cancel Transfer</h3>
     <div class="mermaid">
-sequenceDiagram
-    autonumber
-    actor UserA as Device A (You)
-    participant EngineA as MeshEngine A
-    participant NativeA as Bluetooth / Wi-Fi
-    participant NativeB as Bluetooth / Wi-Fi
-    participant EngineB as MeshEngine B
-    actor UserB as Device B (Friend)
+      sequenceDiagram
+        autonumber
+        actor Sender as Sender
+        participant EngineS as FileTransferManager A
+        participant Socket as TCP Stream
+        participant EngineR as FileTransferManager B
+        actor Receiver as Receiver
 
-    UserA->>EngineA: Tap "Find Friends Nearby" / Scan QR
-    EngineA->>NativeA: Start BLE Broadcast & Scan
-    EngineB->>NativeB: Start BLE Broadcast & Scan
-    NativeA-->>NativeB: BLE Discovery Beacon
-    NativeA->>EngineA: Device B Discovered
-    EngineA->>UserA: Show Friend in "Nearby Friends"
-
-    UserA->>EngineA: Tap "Connect"
-    EngineA->>NativeA: Initiate Wi-Fi Direct Handshake
-    NativeA->>NativeB: P2P Invitation Handshake
-    EngineB->>EngineB: Start TCP Socket Server (Port 8888)
-    EngineA->>EngineB: Open TCP Socket Client & Handshake
-    EngineA->>UserA: 🟢 Connected!
-    EngineB->>UserB: 🟢 Connected!
+        Sender->>EngineS: Send File (e.g. video.mp4)
+        EngineS->>Socket: FILE_META (fileId, totalBytes, chunks)
+        loop Stream 64KB Chunks
+            EngineS->>Socket: FILE_CHUNK (chunkIndex, data)
+            Socket->>EngineR: Buffer Chunk
+        end
+        alt Completed
+            EngineR->>EngineR: Reassemble (0..N)
+            EngineR->>Receiver: Open File
+        else Cancelled
+            Sender->>EngineS: Tap Cancel
+            EngineS->>Socket: FILE_ACK (CANCELLED)
+            EngineR->>Receiver: Purge incomplete file from disk & DB
+        end
     </div>
 
     <div class="divider"></div>
 
-    <h2>❓ 7. Comprehensive Frequently Asked Questions (FAQ)</h2>
+    <h2>❓ 6. FAQ</h2>
+    <div class="faq-q">📡 What is the real-world range?</div>
+    <div class="faq-a">50 to 100+ meters outdoors in direct line-of-sight; 20 to 40 meters indoors across residential walls.</div>
 
-    <div class="faq-box">
-      <div class="faq-question">📡 Q1: What is the exact range of a direct connection between two phones?</div>
-      <p class="faq-answer">
-        <strong>Outdoors (Open Area/Line of Sight):</strong> Typically <strong>50 to 100+ meters</strong>. In open fields, parks, and unobstructed terrain, Wi-Fi Direct radio signals easily reach beyond a football field.<br>
-        <strong>Indoors (Homes & Office Buildings):</strong> Typically <strong>20 to 40 meters</strong> depending on concrete walls, brick structures, and metal obstacles.
-      </p>
-    </div>
+    <div class="faq-q">⚡ How fast are file transfers?</div>
+    <div class="faq-a">Wi-Fi Direct delivers speeds of 50 Mbps to 250+ Mbps directly device-to-device.</div>
 
-    <div class="faq-box">
-      <div class="faq-question">⚡ Q2: Why is it called a "High-Speed Direct Tunnel"?</div>
-      <p class="faq-answer">
-        Traditional Bluetooth transfers data at only ~1 to 2 Mbps (very slow). MeshLink uses <strong>Wi-Fi Direct (2.4 GHz / 5 GHz)</strong> which provides real throughput between <strong>100 Mbps to 250+ Mbps</strong> directly device-to-device. This allows sub-millisecond instant text delivery and high-speed offline data exchange.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">🔄 Q3: What happens when a friend walks out of range and comes back?</div>
-      <p class="faq-answer">
-        When a friend leaves range, the connection gracefully switches to <code>⚪ Offline</code>. As soon as they re-enter the 100m radius, the phone's background Bluetooth Low Energy (BLE) beacon <strong>instantly rediscovers their presence</strong>. Tapping their name reconnects the direct tunnel seamlessly.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">📱 Q4: Does it work between different Android brands (Samsung, POCO, OnePlus, Pixel)?</div>
-      <p class="faq-answer">
-        <strong>Yes!</strong> MeshLink adheres strictly to standard Android <code>WifiP2pManager</code> and <code>BluetoothLeScanner</code> protocols. It has been tested and verified across Samsung, POCO/Xiaomi, OnePlus, Google Pixel, Motorola, and Realme smartphones.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">🔋 Q5: Will keeping MeshLink on drain my phone's battery quickly?</div>
-      <p class="faq-answer">
-        No. MeshLink uses a smart <strong>dual-channel power optimization</strong>:
-        <br>• Idle background discovery uses Bluetooth Low Energy (BLE) consuming less than <strong>15 mW</strong> of power.
-        <br>• High-power Wi-Fi Direct radios only spin up during active communication sessions.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">🔒 Q6: Can a stranger or someone nearby snoop on my private messages?</div>
-      <p class="faq-answer">
-        No. Communication occurs strictly over a direct, point-to-point Wi-Fi Direct socket between the two paired devices. There is no central server, no cloud intermediary, and no broadcast sniffing. Messages are delivered directly into the paired device's physical memory.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">📶 Q7: Do both phones need to be connected to the same Wi-Fi router?</div>
-      <p class="faq-answer">
-        <strong>No.</strong> Neither phone needs any Wi-Fi router, mobile hotspot, or internet access. The phones create their own autonomous peer-to-peer Wi-Fi network directly using their built-in wireless antennas.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">✈️ Q8: Can I use MeshLink in Airplane Mode?</div>
-      <p class="faq-answer">
-        <strong>Yes.</strong> You can enable Airplane Mode and then manually turn on Wi-Fi and Bluetooth from your Android Quick Settings. MeshLink will function completely offline with zero cellular radio activity.
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">📍 Q9: Why does Android ask for Location and Nearby Devices permissions?</div>
-      <p class="faq-answer">
-        Google Android's security architecture groups Wi-Fi Direct and Bluetooth hardware scanning under the "Nearby Devices / Location" permission category to prevent unauthorized hardware access. <strong>MeshLink never accesses, tracks, or transmits your GPS coordinates.</strong>
-      </p>
-    </div>
-
-    <div class="faq-box">
-      <div class="faq-question">💾 Q10: Where is my chat history saved?</div>
-      <p class="faq-answer">
-        All conversations are stored safely on your phone's internal storage using an embedded <strong>Isar NoSQL Database</strong>. Even if you close the app or restart your phone, your chat history remains intact.
-      </p>
-    </div>
+    <div class="faq-q">🔋 Does it drain battery quickly?</div>
+    <div class="faq-a">No. Idle scanning runs on Bluetooth Low Energy consuming less than 15 mW. Wi-Fi Direct only activates during active messaging sessions.</div>
 
   </div>
-
-  <button class="btn-print" onclick="window.print()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path></svg>
-    Save as PDF / Print
-  </button>
 
 </body>
 </html>

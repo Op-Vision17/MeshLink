@@ -4,33 +4,33 @@
 
 ## 📌 1. What is MeshLink?
 
-**MeshLink** is an **off-grid, decentralized, serverless peer-to-peer (P2P) messaging application** for Android. 
+**MeshLink** is a **100% off-grid, decentralized, serverless peer-to-peer (P2P) messaging and multimedia sharing application** for Android. 
 
-It lets people chat directly with nearby friends **without using the Internet, mobile data, cellular towers, or Wi-Fi routers**. 
+It lets users chat, send photos, stream videos, and transfer large documents (PDFs, ZIPs, APKs, DOCs) directly with nearby friends **without using the Internet, mobile data, cellular towers, or external Wi-Fi routers**. 
 
-By turning every Android phone into an independent node that communicates directly with nearby phones over **Bluetooth Low Energy (BLE)** and **Wi-Fi Direct**, MeshLink creates a localized, self-healing wireless network right out of thin air.
+By turning every Android phone into an autonomous wireless node using **Bluetooth Low Energy (BLE)** for discovery and **Wi-Fi Direct (P2P Sockets)** for high-speed transmission, MeshLink creates an instant, localized, self-healing communication grid right out of thin air.
 
 ---
 
 ## 🎯 2. What Problem Does It Solve? (Purpose & Real-World Use Cases)
 
-Modern communication apps (WhatsApp, Telegram, Signal) depend 100% on central servers, internet service providers (ISPs), and mobile cell towers. When internet infrastructure goes down, you lose communication.
+Modern communication apps (WhatsApp, Telegram, Signal) depend completely on central cloud servers, telecom carriers, and ISP infrastructure. When internet or mobile towers fail, standard communication is disabled.
 
-MeshLink solves this by offering **100% offline, resilient, private communication**:
+MeshLink delivers **100% offline, resilient, private, and zero-trust communication**:
 
 | Scenario | How MeshLink Helps |
 | :--- | :--- |
-| 🌪️ **Natural Disasters & Emergencies** | Earthquakes, floods, hurricanes, or power outages often knock down cell towers. MeshLink enables rescue teams, families, and neighbors to stay in touch without any power grid or telecommunication lines. |
-| 🏔️ **Remote Hiking, Camping & Trekking** | Mountains, forests, and remote trails have zero cellular reception. MeshLink allows trekking groups to stay coordinated across hundreds of meters. |
-| 🏟️ **Crowded Events, Stadiums & Festivals** | When 50,000+ people overwhelm mobile towers, regular 4G/5G data freezes. MeshLink bypasses congested towers entirely via direct device-to-device wireless links. |
-| ✈️ **Flights & Subways** | In airplane mode or deep underground metros without Wi-Fi, passengers can message each other directly. |
-| 🔒 **Maximum Privacy & Anti-Surveillance** | Zero servers, zero accounts, zero phone number registrations, and zero metadata logs. No third party can snoop on or censor local conversations. |
+| 🌪️ **Natural Disasters & Blackouts** | Earthquakes, floods, storms, and power outages often knock out cellular towers. MeshLink enables first responders, rescue teams, families, and neighbors to coordinate across hundreds of meters with zero infrastructure. |
+| 🏔️ **Remote Hiking, Camping & Expeditions** | Mountains, forests, and remote backcountry trails have zero cellular reception. MeshLink allows trekking groups to exchange messages, GPS coordinates, and media. |
+| 🏟️ **Crowded Events & Stadiums** | When tens of thousands of people congest mobile towers, standard 4G/5G data halts. MeshLink establishes direct peer-to-peer links that bypass overloaded mobile networks completely. |
+| ✈️ **Flights & Underground Metros** | In Airplane Mode or deep underground subways without public Wi-Fi, passengers can message and share files directly device-to-device. |
+| 🔒 **Maximum Privacy & Anti-Surveillance** | Zero accounts, zero phone number registrations, zero cloud servers, and zero metadata logs. Communications are private to the physical radio link. |
 
 ---
 
-## ⚙️ 3. How Does It Work? (The Technology Explained Simply)
+## ⚙️ 3. How Does It Work? (The Dual-Channel Wireless Engine)
 
-MeshLink uses a **smart hybrid dual-channel wireless pipeline**:
+MeshLink operates a **smart dual-channel wireless pipeline** that combines the battery efficiency of Bluetooth with the high bandwidth of Wi-Fi Direct:
 
 ```
  ┌────────────────────────────────────────────────────────┐
@@ -46,24 +46,26 @@ MeshLink uses a **smart hybrid dual-channel wireless pipeline**:
                             │
               2. Fast Link  │ (Wi-Fi Direct P2P)
               High-Speed    │  Direct Wi-Fi connection
-              Socket Setup  ▼  (Up to 100m range, high speed)
+              Socket Setup  ▼  (Up to 100m range, 250+ Mbps)
  ┌────────────────────────────────────────────────────────┐
- │        3. Real-Time Chat Over Secure TCP Stream        │
+ │        3. Real-Time Chat & Multimedia Over TCP         │
  └──────────────────────────┬─────────────────────────────┘
 ```
 
 ### Phase 1: Background Presence Discovery (Bluetooth Low Energy)
-- When you tap **"Find Friends Nearby"**, your phone starts broadcasting a tiny Bluetooth beacon containing only your Display Name and random 8-character ID.
-- Phones scanning nearby pick up this beacon immediately—even through pockets or in background mode—and list your name under **Nearby Friends**.
+- When **"Find Friends Nearby"** is enabled, the phone broadcasts a lightweight BLE advertisement beacon containing the display name, avatar index, and randomized node ID.
+- Nearby devices passively scan for these beacons and display the friend in the **Explore** tab without establishing high-power connections.
 
-### Phase 2: Instant High-Speed Direct Link (Wi-Fi Direct)
-- When you tap **Connect** (or scan a QR code), the phones perform a direct Wi-Fi Direct P2P handshake.
-- One phone becomes the group leader and the other joins, forming a private high-speed Wi-Fi tunnel directly between the two physical devices.
+### Phase 2: High-Speed Direct Tunnel Handshake (Wi-Fi Direct)
+- When a user taps **Connect** or scans a **QR Code**, the devices execute an autonomous Wi-Fi Direct handshake (`WifiP2pManager`).
+- One phone assumes the Group Owner (GO) role and hosts an internal TCP socket server on port `8888`, while the peer joins as a client.
 
-### Phase 3: Real-Time Stream & Persistent Chat
-- An asynchronous TCP socket connects the phones.
-- Messages, timestamps, and delivery acknowledgments (ACKs) fly back and forth instantly in real-time.
-- All messages are safely persisted in your local on-device database (**Isar NoSQL**) so your chat history is always saved.
+### Phase 3: Real-Time Messaging & Chunked File Streaming
+- **Text Messages**: Delivered over the active TCP stream with sub-millisecond latency and instant delivery ACKs (`✓✓`).
+- **High-Speed File & Media Sharing**:
+  - Files (Images, Videos, PDFs, ZIPs, APKs) are chunked into **64 KB binary packets** with index-based metadata.
+  - Chunks are transmitted over the TCP tunnel and reassembled sequentially on the receiving end.
+  - An interactive **Cancel Send** control allows either peer to abort an in-flight transfer at any time, instantly deleting partial data and purging incomplete bubbles.
 
 ---
 
@@ -76,43 +78,46 @@ MeshLink uses a **smart hybrid dual-channel wireless pipeline**:
 │                                                          │
 │  [💬 Chats]               [📡 Explore]      [⚙️ Settings] │
 │                                                          │
-│  • WhatsApp style         • Status indicator • Edit Name │
-│  • Display name only      • Find Friends     • Light/Dark│
-│  • Last message + time    • Nearby list        Theme     │
-│  • 🟢 Live status dot     • 🔘 Scan QR (FAB) • Mesh Info │
-│  • Forget friend                                         │
+│  • WhatsApp style list    • Status pill      • Profile   │
+│  • File / Media preview   • Saved Friends    • Theme     │
+│  • Hold-to-delete chat    • Nearby Friends     (Cream/   │
+│  • 🟢 Live status dot     • 🔘 Scan QR (FAB)   Dark)     │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 💬 Tab 1: Chats (Your Conversation Hub)
-- **WhatsApp-like Experience**: View all your recent and saved conversations in one clean list.
-- **Display Name Only**: Clean, bold typography with no cluttered avatar placeholders or confusing engineering codes.
-- **Message Snippet & Time**: Displays the last message sent or received and timestamp.
-- **Status Dot**: `🟢 Connected` (ready for live offline chatting) or `⚪ Offline` (saved friend).
-- **Forget Friend**: Tap the trash icon with confirmation to remove a friend from your list.
+### 💬 Tab 1: Chats (Conversation Hub)
+- **WhatsApp-Style Chat List**: Shows active and saved peer conversations with clean display names, unread indicators, and message timestamps.
+- **Media & Document Previews**: Shows `📷 Photo`, `🎥 Video`, and `📄 Document [filename]` previews in the chat list.
+- **Hold-to-Delete Individual Messages**: Long-press any chat bubble to bring up the delete confirmation dialog and remove it from on-device storage.
+- **Delete Conversation vs. Forget Friend**: Long-press a chat tile to delete message history without unfriending the peer.
+- **Status Indicator**: `🟢 Connected` (ready for live offline messaging) or `⚪ Saved Friend` (offline).
 
-### 📡 Tab 2: Explore (Discovery & Pairing)
-- **Connection Status Pill**:
-  - `● Searching` (Blue glow dot) — Actively scanning the local environment for nearby friends.
-  - `● Connected` (Emerald glow dot) — Connected to offline mesh.
-  - `● Ready` (Gray dot) — Idle and ready to search.
-- **Find Friends Button**: Single-tap toggle to start or stop searching for friends.
-- **Nearby Friends List**: Live list of nearby friends discovered in your area. Tap **Connect** to link up, or **Chat** if already linked.
-- **Scan / QR Floating Action Button (FAB)**: A bottom-right button to instantly open the QR scanner.
+### 📡 Tab 2: Explore (Discovery & Peer Management)
+- **Real-Time Status Pill**:
+  - `● Connected` (Emerald glow) — Real-time mesh socket link active.
+  - `● Searching` (Cyan glow) — Actively scanning for nearby devices.
+  - `● Ready` (Muted) — Bluetooth radio ready to discover.
+- **Saved Friends Section**: Shows paired friends with quick "Connect" buttons. Includes a dedicated **Forget Friend** action to remove pairings.
+- **Nearby Friends Section**: Live list of newly discovered peers in range.
+- **QR Code FAB**: Instant bottom-right button to launch the QR scanner.
 
-### ⚙️ Tab 3: Settings (Customization & Control)
-- **Display Name**: Shows how you appear to others. Tap the `✏️` pencil icon to edit your name and save.
-- **Appearance (Light ☀️ / Dark 🌙 Mode)**:
-  - **Light Mode**: Emerald Green (`#00A982`) + Crisp White (`#FFFFFF`) surface.
-  - **Dark Mode**: Mint Green (`#00D4A8`) + Deep Slate (`#151B23`) surface.
-  - Instant theme switching without restarting the app.
-- **About MeshLink**: Overview of your offline mesh protocol and security.
+### ⚙️ Tab 3: Settings & Profile
+- **Profile Customization**: Choose your display name, status tagline, and avatar badge.
+- **Dual-Theme Engine**:
+  - **Light Theme**: Soothing warm cream & beige background (`#F6F3EC`), ivory card surfaces (`#FDFBF7`), lush emerald accents (`#00896B`), and espresso typography (`#231F1C`).
+  - **Dark Theme**: Deep charcoal background (`#0B0F14`), slate cards (`#151B23`), vibrant mint accents (`#00D4A8`), and crisp white typography.
+- **Node Fingerprint ID**: View and copy your hardware cryptographic node ID.
 
-### 📷 QR Code Pairing Screen
-- **Scan QR**: Point your camera at a friend's screen to connect instantly.
-- **My QR**: Shows your personal QR code so friends can scan and add you.
-- **Friend Code**: Enter an 8-character ID manually if camera access is unavailable.
+### 📷 Pure QR Pairing Flow
+- **Scan QR**: Live camera QR scanner with auto-focus, torch toggle, switch camera, and Gallery image QR decoder.
+- **My QR**: Full-screen high-contrast QR code with profile avatar badge, display name, and node ID for instant scanning.
+
+### 📁 In-App Media & File Sharing
+- **In-App Video Player**: Watch received MP4/MKV videos directly inside MeshLink with custom play/pause/seek controls, or switch to external hardware player for 4K/HEVC videos.
+- **Universal Document Viewer**: Open PDFs, DOCs, ZIPs, APKs, and audio files instantly using Android's native "Open with..." app picker via secure `FileProvider`.
+- **Save to Downloads**: Download received attachments directly to public device storage (`Download/MeshLink/`).
+- **Interactive Cancel Transfer**: Tap `[✕ Cancel]` on the progress bar during any transfer to abort the stream and automatically remove incomplete files.
 
 ---
 
@@ -120,151 +125,157 @@ MeshLink uses a **smart hybrid dual-channel wireless pipeline**:
 
 ```mermaid
 graph TD
-    subgraph Flutter_UI ["Flutter Presentation Layer"]
+    subgraph Flutter_UI ["Flutter UI & Presentation Layer"]
         HomeScreen["HomeScreen (3 Tabs: Chats, Explore, Settings)"]
-        ChatScreen["ChatScreen (Real-time P2P Chat)"]
-        QrScreen["QrScreen (Scanner & QR Generator)"]
-        Riverpod["Riverpod State Notifiers (Mesh, Profile, Permissions)"]
+        ChatScreen["ChatScreen (P2P Real-time Chat & Media)"]
+        QrScreen["QrScreen (Live Camera Scanner & QR Card)"]
+        ProfileScreen["ProfileScreen (Badge & Name Customizer)"]
+        Riverpod["Riverpod State Notifiers (MeshNotifier, Theme, Profile)"]
     end
 
-    subgraph Core_Logic ["Domain & Local Data Layer"]
-        Repo["MeshRepository & PeerRepository"]
+    subgraph Core_Logic ["Domain & Local Persistence Layer"]
+        MeshRepo["MeshRepository & PeerRepository"]
+        MessageRepo["MessageRepository"]
+        FileTransfer["FileTransferManager (64KB Chunker & Sequential Assembler)"]
         IsarDB[("Isar Local NoSQL Database")]
-        ChannelBridge["PlatformChannelDataSource"]
+        ChannelBridge["PlatformChannelBridge (MethodChannel & EventChannel)"]
     end
 
     subgraph Native_Android ["Native Kotlin Engine (Android)"]
         MeshEngine["MeshEngine.kt (Central Coordinator)"]
-        BLE_Adv["BleAdvertiser.kt (Beacon Broadcast)"]
-        BLE_Scan["BleScanner.kt (Presence Scanner)"]
-        WiFi_P2P["WifiDirectManager.kt (Wi-Fi P2P Group Owner)"]
-        Sockets["MeshSocketServer.kt & MeshSocketClient.kt (TCP Streaming)"]
+        BleAdv["BleAdvertiser.kt (BLE Beacon Broadcast)"]
+        BleScan["BleScanner.kt (BLE Beacon Scanner)"]
+        WifiDirect["WifiDirectManager.kt (P2P Group Owner & Client)"]
+        SocketServer["MeshSocketServer.kt (Port 8888 TCP Server)"]
+        SocketClient["MeshSocketClient.kt (TCP Socket Client)"]
     end
 
     HomeScreen --> Riverpod
     ChatScreen --> Riverpod
     QrScreen --> Riverpod
-    Riverpod --> Repo
-    Repo --> IsarDB
-    Repo --> ChannelBridge
+    ProfileScreen --> Riverpod
+    Riverpod --> MeshRepo
+    Riverpod --> MessageRepo
+    Riverpod --> FileTransfer
+    MeshRepo --> IsarDB
+    MessageRepo --> IsarDB
+    MeshRepo --> ChannelBridge
     ChannelBridge <==>|"MethodChannel / EventChannel"| MeshEngine
-    MeshEngine --> BLE_Adv
-    MeshEngine --> BLE_Scan
-    MeshEngine --> WiFi_P2P
-    MeshEngine --> Sockets
+    MeshEngine --> BleAdv
+    MeshEngine --> BleScan
+    MeshEngine --> WifiDirect
+    MeshEngine --> SocketServer
+    MeshEngine --> SocketClient
 ```
 
 ---
 
-## 🔄 6. Detailed Interaction Flowcharts
+## 🔄 6. Detailed Interaction Sequence Diagrams
 
-### A. How Devices Discover and Connect
+### A. Device Discovery & Direct Socket Connection
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor UserA as Device A (You)
+    actor UserA as Device A (Initiator)
     participant EngineA as MeshEngine A
-    participant NativeA as Bluetooth / Wi-Fi Direct
-    participant NativeB as Bluetooth / Wi-Fi Direct
+    participant BleA as BLE Hardware A
+    participant BleB as BLE Hardware B
     participant EngineB as MeshEngine B
-    actor UserB as Device B (Friend)
+    actor UserB as Device B (Peer)
 
-    UserA->>EngineA: Tap "Find Friends Nearby" / Scan QR
-    EngineA->>NativeA: Start BLE Broadcast & Scan
-    EngineB->>NativeB: Start BLE Broadcast & Scan
-    NativeA-->>NativeB: BLE Discovery Beacon
-    NativeA->>EngineA: Device B Discovered
-    EngineA->>UserA: Show Friend in "Nearby Friends" list
+    UserA->>EngineA: Tap "Find Friends" or Scan QR
+    EngineA->>BleA: Start BLE Broadcast (Name, Avatar, Node ID)
+    EngineB->>BleB: Start BLE Scanning
+    BleA-->>BleB: BLE Discovery Packet
+    BleB->>EngineB: Discovered Peer A
+    EngineB->>UserB: Display Peer A in Nearby List
 
     UserA->>EngineA: Tap "Connect"
-    EngineA->>NativeA: Initiate Wi-Fi Direct Handshake
-    NativeA->>NativeB: Wi-Fi P2P Connection Invitation
-    Note over NativeA,NativeB: Wi-Fi P2P Direct Tunnel Established
-    EngineB->>EngineB: Start TCP Socket Server (Port 8888)
-    EngineA->>EngineB: Connect Socket Client & Send Handshake
-    EngineA->>UserA: 🟢 Connected!
-    EngineB->>UserB: 🟢 Connected!
+    EngineA->>EngineB: Wi-Fi Direct P2P Negotiation Handshake
+    Note over EngineA,EngineB: P2P Group Created (GO on Device B)
+    EngineB->>EngineB: Launch TCP Socket Server (:8888)
+    EngineA->>EngineB: Connect TCP Socket Client
+    EngineA->>UserA: 🟢 Connected (Ready to Chat)
+    EngineB->>UserB: 🟢 Connected (Ready to Chat)
 ```
 
-### B. How Messages Are Sent & Delivered
+### B. High-Speed File Transfer with Cancellation Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Sender as Sender (You)
-    participant ChatUI as ChatScreen
-    participant MeshProv as Riverpod MeshNotifier
-    participant LocalDB as Isar NoSQL DB
-    participant Socket as Direct TCP Socket
-    actor Receiver as Receiver (Friend)
+    actor Sender as Sender (Device A)
+    participant ManagerA as FileTransferManager A
+    participant Socket as Direct TCP Tunnel
+    participant ManagerB as FileTransferManager B
+    actor Receiver as Receiver (Device B)
 
-    Sender->>ChatUI: Type message & tap Send (➤)
-    ChatUI->>MeshProv: sendPacket(receiverId, text)
-    MeshProv->>LocalDB: Store local message (Status: Sending 🕒)
-    MeshProv->>Socket: Transmit TCP packet over Wi-Fi Direct
-    Socket->>Receiver: Deliver message packet
-    Receiver-->>Socket: Return Delivery Acknowledgment (ACK)
-    Socket->>MeshProv: Event: Message Delivered
-    MeshProv->>LocalDB: Update message status (Delivered ✓✓)
-    MeshProv->>ChatUI: Update message bubble UI
+    Sender->>ManagerA: Select file (e.g. video.mp4, 12 MB)
+    ManagerA->>Socket: Send FILE_META (fileId, totalBytes, totalChunks)
+    Socket->>ManagerB: Receive FILE_META (Create temporary assembly)
+    
+    loop For each 64KB Chunk (0..N)
+        ManagerA->>Socket: Send FILE_CHUNK (chunkIndex, base64Data)
+        Socket->>ManagerB: Store chunkIndex in Assembly Map
+        ManagerB->>Receiver: Update Progress (e.g. 45%)
+    end
+
+    alt Transfer Completed
+        ManagerB->>ManagerB: Sequentially Assemble Chunks (0..N)
+        ManagerB->>Socket: Send FILE_ACK (status: DELIVERED)
+        Receiver->>Receiver: Open / Play / Download File
+    else User Taps Cancel
+        Sender->>ManagerA: Tap [✕ Cancel]
+        ManagerA->>Socket: Send FILE_ACK (status: CANCELLED)
+        ManagerA->>Sender: Delete local transfer bubble
+        Socket->>ManagerB: Receive CANCELLED signal
+        ManagerB->>ManagerB: Delete partial file from disk
+        ManagerB->>Receiver: Purge message from chat & database
+    end
 ```
 
 ---
 
-## ❓ 7. Comprehensive Frequently Asked Questions (FAQ)
+## ❓ 7. Frequently Asked Questions (FAQ)
 
-### 📡 Q1: What is the exact range of a direct connection between two phones?
-* **Outdoors (Open Area / Clear Line-of-Sight)**: Typically **50 to 100+ meters**. In open fields, parks, grounds, or hiking paths, Wi-Fi Direct easily reaches beyond 100 meters.
-* **Indoors (Homes, Offices, Buildings)**: Typically **20 to 40 meters** due to concrete/brick wall signal attenuation.
-
----
-
-### ⚡ Q2: Why is it called a "High-Speed Direct Tunnel"?
-* Traditional Bluetooth data transfer is very slow (~1 to 2 Mbps).
-* MeshLink uses **Wi-Fi Direct (2.4 GHz / 5 GHz)** which delivers real throughput between **100 Mbps to 250+ Mbps** directly device-to-device.
-* This allows sub-millisecond instant text delivery, voice notes, and large offline file transfers.
+### 📡 Q1: What is the real-world range of MeshLink?
+- **Outdoors (Line-of-Sight)**: **50 to 100+ meters**. In open fields, parks, or streets, Wi-Fi Direct signals easily reach over 100 meters.
+- **Indoors (Buildings / Homes)**: **20 to 40 meters**, passing through standard drywall and residential walls.
 
 ---
 
-### 🔄 Q3: What happens when a friend walks out of range and comes back?
-* When a friend goes beyond 100m, the connection status changes to `⚪ Offline`.
-* As soon as they re-enter the 100m wireless zone, your phone's background Bluetooth Low Energy (BLE) beacon **instantly rediscovers their presence**.
-* Tapping their name reconnects the direct tunnel seamlessly.
+### ⚡ Q2: How fast is file and media transfer?
+- Unlike Bluetooth transfer speeds (~1-2 Mbps), MeshLink operates over **Wi-Fi Direct (2.4 GHz / 5 GHz)** achieving real-world speeds of **50 Mbps to 250+ Mbps**. A 50 MB video or PDF transfers in a few seconds.
 
 ---
 
-### 📱 Q4: Does it work between different Android brands (Samsung, POCO, OnePlus, Pixel)?
-* **Yes, absolutely!** MeshLink uses standard Android `WifiP2pManager` and `BluetoothLeScanner` APIs, tested and verified across Samsung, POCO/Xiaomi, OnePlus, Google Pixel, Motorola, and Realme smartphones.
+### 🛑 Q3: What happens if I cancel a file while it is sending?
+- Tapping **Cancel** immediately stops chunk transmission. MeshLink transmits a cancellation packet over the network, deleting the incomplete chunks on the receiver's disk and removing the cancelled card completely from both devices.
 
 ---
 
-### 🔋 Q5: Will keeping MeshLink on drain my phone's battery quickly?
-* No. MeshLink uses smart **dual-channel power management**:
-  * Idle background discovery uses Bluetooth Low Energy (BLE) consuming less than **15 mW** of power.
-  * High-power Wi-Fi Direct radios only activate during active messaging sessions.
+### 🗄️ Q4: Is chat history preserved after closing or restarting the app?
+- **Yes.** All text messages, peer profiles, and file metadata are permanently stored in an on-device embedded **Isar NoSQL database**.
 
 ---
 
-### 🔒 Q6: Can a stranger or someone nearby snoop on my private messages?
-* No. Communication occurs strictly over a direct, point-to-point Wi-Fi Direct socket between the two paired devices. There is no central server, no cloud intermediary, and no broadcast sniffing. Messages are delivered directly into the paired device's physical memory.
+### 🔋 Q5: Does running MeshLink drain battery quickly?
+- **No.** Idle background discovery uses Bluetooth Low Energy (BLE) consuming less than **15 mW** of power. High-speed Wi-Fi Direct sockets only activate during active messaging or file transfer sessions.
 
 ---
 
-### 📶 Q7: Do both phones need to be connected to the same Wi-Fi router?
-* **No.** Neither phone needs any Wi-Fi router, mobile hotspot, or internet access. The phones create their own autonomous peer-to-peer Wi-Fi network directly using their built-in wireless antennas.
+### 🔒 Q6: Can third parties intercept our messages?
+- **No.** Connections are strictly direct point-to-point Wi-Fi Direct sockets between the two physical devices. There are no cloud intermediaries, servers, or broadcast logs.
 
 ---
 
-### ✈️ Q8: Can I use MeshLink in Airplane Mode?
-* **Yes.** You can enable Airplane Mode and then manually turn on Wi-Fi and Bluetooth from your Android Quick Settings. MeshLink will function completely offline with zero cellular radio activity.
+## 🛠️ 8. Tech Stack & Dependencies
 
----
-
-### 📍 Q9: Why does Android ask for Location and Nearby Devices permissions?
-* Google Android's security architecture groups Wi-Fi Direct and Bluetooth hardware scanning under the "Nearby Devices / Location" permission category to prevent unauthorized hardware access. **MeshLink never accesses, tracks, or transmits your GPS coordinates.**
-
----
-
-### 💾 Q10: Where is my chat history saved?
-* All conversations are stored safely on your phone's internal storage using an embedded **Isar NoSQL Database**. Even if you close the app or restart your phone, your chat history remains intact.
+- **Framework**: Flutter 3.x (Dart 3.x)
+- **Native Platform**: Kotlin 1.9+ (Android SDK 26–34)
+- **State Management**: Flutter Riverpod
+- **Local Database**: Isar Database (Embedded NoSQL)
+- **Camera & QR**: `mobile_scanner`, `qr_flutter`
+- **Video & Media**: `video_player`, `open_filex`, `image_picker`, `file_picker`
+- **Typography & Theme**: Google Fonts (Inter)
