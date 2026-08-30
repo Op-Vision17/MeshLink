@@ -273,4 +273,10 @@ class SocketManager(
         }
         Log.i(TAG, "SocketManager stopped all sockets (intentional=$isIntentionalDisconnect)")
     }
+
+    fun getActiveRemoteIps(): List<String> {
+        return socketMap.keys
+            .filter { !it.isClosed && it.isConnected }
+            .mapNotNull { it.inetAddress?.hostAddress }
+    }
 }

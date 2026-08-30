@@ -198,6 +198,102 @@ class PlatformChannelDataSource {
     }
   }
 
+  Future<bool> startVoiceRecording(String outputPath) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodStartVoiceRecording,
+        {'outputPath': outputPath},
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<String?> stopVoiceRecording() async {
+    try {
+      final result = await _methodChannel.invokeMethod<String>(
+        ChannelConstants.methodStopVoiceRecording,
+      );
+      return result;
+    } on PlatformException catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> cancelVoiceRecording() async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodCancelVoiceRecording,
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> startLiveCall(String targetIp, {int port = 8889}) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodStartLiveCall,
+        {
+          'targetIp': targetIp,
+          'port': port,
+        },
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> stopLiveCall() async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodStopLiveCall,
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> setCallMuted(bool isMuted) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodSetCallMuted,
+        {'isMuted': isMuted},
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> setCallSpeakerphone(bool isSpeakerOn) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>(
+        ChannelConstants.methodSetCallSpeakerphone,
+        {'isSpeakerOn': isSpeakerOn},
+      );
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<String> getConnectedPeerIp(String? peerId) async {
+    try {
+      final result = await _methodChannel.invokeMethod<String>(
+        ChannelConstants.methodGetConnectedPeerIp,
+        {'peerId': peerId},
+      );
+      return result ?? '192.168.49.1';
+    } on PlatformException catch (_) {
+      return '192.168.49.1';
+    }
+  }
+
   Future<String?> getLocalNodeId() async {
     try {
       final result = await _methodChannel.invokeMethod<String>(

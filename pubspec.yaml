@@ -45,6 +45,7 @@ dependencies:
   file_picker: ^8.1.7
   path: ^1.9.0
   video_player: ^2.9.2
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:

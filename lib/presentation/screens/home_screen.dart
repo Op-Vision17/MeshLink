@@ -10,6 +10,7 @@ import '../providers/permission_provider.dart';
 import '../providers/user_profile_provider.dart';
 import 'chat_screen.dart';
 import 'qr_screen.dart';
+import '../widgets/incoming_call_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -258,6 +259,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 },
               ),
             ),
+          const IncomingCallOverlay(),
         ],
       ),
       floatingActionButton: _currentIndex == 1
@@ -433,9 +435,11 @@ class _ChatsTab extends StatelessWidget {
                 ? '📷 Photo'
                 : (lastMsg.messageType == MessageType.video
                     ? '🎥 Video'
-                    : (lastMsg.messageType == MessageType.file
-                        ? '📄 ${lastMsg.fileName ?? "Document"}'
-                        : (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content))))
+                    : (lastMsg.messageType == MessageType.audio
+                        ? '🎤 Voice message'
+                        : (lastMsg.messageType == MessageType.file
+                            ? '📄 ${lastMsg.fileName ?? "Document"}'
+                            : (lastMsg.senderId == 'local' ? 'You: ${lastMsg.content}' : lastMsg.content)))))
             : (isConnected ? 'Direct link ready' : 'Tap to open chat');
 
         final timeStr = lastMsg != null

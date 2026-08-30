@@ -256,11 +256,12 @@ class FileTransferManager {
       case '.wav':
       case '.m4a':
       case '.aac':
-        return 'audio/mpeg';
+        return 'audio/m4a';
       default:
-        return type == MessageType.image
-            ? 'image/jpeg'
-            : (type == MessageType.video ? 'video/mp4' : 'application/octet-stream');
+        if (type == MessageType.image) return 'image/jpeg';
+        if (type == MessageType.video) return 'video/mp4';
+        if (type == MessageType.audio) return 'audio/m4a';
+        return 'application/octet-stream';
     }
   }
 }

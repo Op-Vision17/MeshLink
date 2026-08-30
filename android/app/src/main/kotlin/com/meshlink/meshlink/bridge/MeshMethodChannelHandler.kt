@@ -2,6 +2,7 @@ package com.meshlink.meshlink.bridge
 
 import com.meshlink.meshlink.constants.MeshConstants
 import com.meshlink.meshlink.mesh.MeshEngine
+import com.meshlink.meshlink.mesh.VoIPEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
@@ -90,6 +91,44 @@ class MeshMethodChannelHandler(private val engine: MeshEngine) : MethodChannel.M
                 val videoPath = call.argument<String>("videoPath") ?: ""
                 val thumbPath = engine.createVideoThumbnail(videoPath)
                 result.success(thumbPath)
+            }
+            MeshConstants.METHOD_START_VOICE_RECORDING -> {
+                val outputPath = call.argument<String>("outputPath") ?: ""
+                val success = engine.startVoiceRecording(outputPath)
+                result.success(success)
+            }
+            MeshConstants.METHOD_STOP_VOICE_RECORDING -> {
+                val recordedPath = engine.stopVoiceRecording()
+                result.success(recordedPath)
+            }
+            MeshConstants.METHOD_CANCEL_VOICE_RECORDING -> {
+                val success = engine.cancelVoiceRecording()
+                result.success(success)
+            }
+            MeshConstants.METHOD_START_LIVE_CALL -> {
+                val targetIp = call.argument<String>("targetIp") ?: "192.168.49.1"
+                val port = call.argument<Int>("port") ?: VoIPEngine.DEFAULT_VOIP_PORT
+                val success = engine.startLiveCall(targetIp, port)
+                result.success(success)
+            }
+            MeshConstants.METHOD_STOP_LIVE_CALL -> {
+                val success = engine.stopLiveCall()
+                result.success(success)
+            }
+            MeshConstants.METHOD_SET_CALL_MUTED -> {
+                val isMuted = call.argument<Boolean>("isMuted") ?: false
+                engine.setCallMuted(isMuted)
+                result.success(true)
+            }
+            MeshConstants.METHOD_SET_CALL_SPEAKERPHONE -> {
+                val isSpeakerOn = call.argument<Boolean>("isSpeakerOn") ?: false
+                engine.setCallSpeakerphone(isSpeakerOn)
+                result.success(true)
+            }
+            MeshConstants.METHOD_GET_CONNECTED_PEER_IP -> {
+                val peerId = call.argument<String>("peerId")
+                val ip = engine.getConnectedPeerIp(peerId)
+                result.success(ip)
             }
             "getLocalNodeId" -> {
                 result.success(engine.localNodeId)

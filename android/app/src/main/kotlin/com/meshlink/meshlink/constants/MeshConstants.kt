@@ -30,6 +30,14 @@ object MeshConstants {
     const val METHOD_OPEN_FILE = "openFile"
     const val METHOD_SAVE_FILE_TO_DOWNLOADS = "saveFileToDownloads"
     const val METHOD_CREATE_VIDEO_THUMBNAIL = "createVideoThumbnail"
+    const val METHOD_START_VOICE_RECORDING = "startVoiceRecording"
+    const val METHOD_STOP_VOICE_RECORDING = "stopVoiceRecording"
+    const val METHOD_CANCEL_VOICE_RECORDING = "cancelVoiceRecording"
+    const val METHOD_START_LIVE_CALL = "startLiveCall"
+    const val METHOD_STOP_LIVE_CALL = "stopLiveCall"
+    const val METHOD_SET_CALL_MUTED = "setCallMuted"
+    const val METHOD_SET_CALL_SPEAKERPHONE = "setCallSpeakerphone"
+    const val METHOD_GET_CONNECTED_PEER_IP = "getConnectedPeerIp"
 
     // Event Types
     const val EVENT_PEER_FOUND = "peerFound"

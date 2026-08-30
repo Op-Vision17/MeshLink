@@ -10,7 +10,11 @@ enum class PacketType {
     HANDSHAKE,
     FILE_META,
     FILE_CHUNK,
-    FILE_ACK;
+    FILE_ACK,
+    CALL_OFFER,
+    CALL_ANSWER,
+    CALL_DECLINE,
+    CALL_END;
 
     companion object {
         fun fromString(value: String): PacketType {

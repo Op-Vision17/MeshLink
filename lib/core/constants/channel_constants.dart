@@ -19,6 +19,14 @@ abstract class ChannelConstants {
   static const String methodOpenFile = 'openFile';
   static const String methodSaveFileToDownloads = 'saveFileToDownloads';
   static const String methodCreateVideoThumbnail = 'createVideoThumbnail';
+  static const String methodStartVoiceRecording = 'startVoiceRecording';
+  static const String methodStopVoiceRecording = 'stopVoiceRecording';
+  static const String methodCancelVoiceRecording = 'cancelVoiceRecording';
+  static const String methodStartLiveCall = 'startLiveCall';
+  static const String methodStopLiveCall = 'stopLiveCall';
+  static const String methodSetCallMuted = 'setCallMuted';
+  static const String methodSetCallSpeakerphone = 'setCallSpeakerphone';
+  static const String methodGetConnectedPeerIp = 'getConnectedPeerIp';
   static const String methodGetLocalNodeId = 'getLocalNodeId';
 
   // Event Types

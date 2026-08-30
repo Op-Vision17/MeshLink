@@ -19,6 +19,7 @@ import '../../domain/repositories/peer_repository.dart';
 import '../../domain/usecases/get_conversation_messages_usecase.dart';
 import '../../domain/usecases/send_message_usecase.dart';
 import '../../domain/usecases/sync_peer_list_usecase.dart';
+import 'call_provider.dart';
 
 String normalizeId(String id) {
   if (id.isEmpty || id == 'broadcast' || id == '*') return id;
@@ -180,6 +181,7 @@ class MeshUiState {
 }
 
 class MeshNotifier extends StateNotifier<MeshUiState> {
+  final Ref _ref;
   final MeshRepository _repository;
   final SendMessageUseCase _sendMessageUseCase;
   final MessageRepository _messageRepository;
@@ -190,6 +192,7 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
   StreamSubscription<MeshEvent>? _eventSubscription;
 
   MeshNotifier(
+    this._ref,
     this._repository,
     this._sendMessageUseCase,
     this._messageRepository,
@@ -422,6 +425,42 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
           } catch (e) {
             _addDebugLog('Failed to parse FILE_ACK: $e');
           }
+          return;
+        }
+
+        // Handle Call Signaling Packets
+        if (event.packet.packetType == PacketType.callOffer) {
+          try {
+            final map = jsonDecode(event.packet.payload) as Map<String, dynamic>;
+            final callerName = map['callerName'] as String? ?? 'User';
+            final callerAvatar = (map['callerAvatar'] as num?)?.toInt() ?? 0;
+            _ref.read(callProvider.notifier).handleIncomingCallOffer(
+                  cleanSender,
+                  callerName,
+                  callerAvatar,
+                );
+          } catch (_) {
+            _ref.read(callProvider.notifier).handleIncomingCallOffer(
+                  cleanSender,
+                  'Peer ${cleanSender.takeLast(4)}',
+                  0,
+                );
+          }
+          return;
+        }
+
+        if (event.packet.packetType == PacketType.callAnswer) {
+          _ref.read(callProvider.notifier).handleIncomingCallAnswer(cleanSender);
+          return;
+        }
+
+        if (event.packet.packetType == PacketType.callDecline) {
+          _ref.read(callProvider.notifier).handleIncomingCallDecline(cleanSender);
+          return;
+        }
+
+        if (event.packet.packetType == PacketType.callEnd) {
+          _ref.read(callProvider.notifier).handleIncomingCallEnd(cleanSender);
           return;
         }
 
@@ -827,6 +866,14 @@ class MeshNotifier extends StateNotifier<MeshUiState> {
     } catch (_) {}
   }
 
+  Future<void> sendRawPacket(PacketModel packet) async {
+    try {
+      await _repository.sendPacket(packet);
+    } catch (e) {
+      debugPrint('Failed to send raw packet: $e');
+    }
+  }
+
   @override
   void dispose() {
     _eventSubscription?.cancel();
@@ -841,6 +888,7 @@ final meshProvider = StateNotifierProvider<MeshNotifier, MeshUiState>((ref) {
   final syncPeerListUseCase = ref.watch(syncPeerListUseCaseProvider);
   final peerRepository = ref.watch(peerRepositoryProvider);
   return MeshNotifier(
+    ref,
     repository,
     sendMessageUseCase,
     messageRepository,

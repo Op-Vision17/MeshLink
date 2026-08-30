@@ -1,6 +1,6 @@
 enum MessageStatus { sending, sent, delivered, failed }
 
-enum MessageType { text, image, video, file }
+enum MessageType { text, image, video, file, audio }
 
 class ChatMessage {
   final String id;

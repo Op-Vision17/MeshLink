@@ -766,6 +766,13 @@ class WifiDirectManager(
         else -> "Unknown reason ($reason)"
     }
 
+    fun getConnectedGroupOwnerIp(peerId: String? = null): String? {
+        if (peerId != null) {
+            peerInfoMap[peerId]?.groupOwnerIp?.let { return it }
+        }
+        return peerInfoMap.values.firstOrNull { it.groupOwnerIp != null }?.groupOwnerIp ?: "192.168.49.1"
+    }
+
     private fun p2pStatusDescription(status: Int): String = when (status) {
         WifiP2pDevice.CONNECTED -> "CONNECTED (0)"
         WifiP2pDevice.INVITED -> "INVITED (1)"

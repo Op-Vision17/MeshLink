@@ -844,4 +844,116 @@ class MeshEngine(private val context: Context) {
             null
         }
     }
+
+    private var mediaRecorder: android.media.MediaRecorder? = null
+    private var currentRecordingPath: String? = null
+
+    /**
+     * Starts recording AAC/M4A voice audio using native MediaRecorder.
+     */
+    fun startVoiceRecording(outputPath: String): Boolean {
+        return try {
+            val file = java.io.File(outputPath)
+            file.parentFile?.mkdirs()
+            currentRecordingPath = outputPath
+
+            val recorder = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                android.media.MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                android.media.MediaRecorder()
+            }
+
+            recorder.apply {
+                setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+                setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(64000)
+                setAudioSamplingRate(44100)
+                setOutputFile(outputPath)
+                prepare()
+                start()
+            }
+            mediaRecorder = recorder
+            Log.i(TAG, "Native voice recording started: $outputPath")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "startVoiceRecording failed: ${e.message}", e)
+            mediaRecorder = null
+            currentRecordingPath = null
+            false
+        }
+    }
+
+    /**
+     * Stops native MediaRecorder and returns the recorded file path.
+     */
+    fun stopVoiceRecording(): String? {
+        val path = currentRecordingPath
+        try {
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+            Log.i(TAG, "Native voice recording stopped: $path")
+        } catch (e: Exception) {
+            Log.e(TAG, "stopVoiceRecording failed: ${e.message}", e)
+        } finally {
+            mediaRecorder = null
+            currentRecordingPath = null
+        }
+        return if (path != null && java.io.File(path).exists()) path else null
+    }
+
+    /**
+     * Cancels native voice recording and purges partial recording file.
+     */
+    fun cancelVoiceRecording(): Boolean {
+        val path = currentRecordingPath
+        try {
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+            Log.i(TAG, "Native voice recording cancelled")
+        } catch (e: Exception) {
+            Log.e(TAG, "cancelVoiceRecording failed: ${e.message}", e)
+        } finally {
+            mediaRecorder = null
+            currentRecordingPath = null
+            if (path != null) {
+                try {
+                    val f = java.io.File(path)
+                    if (f.exists()) f.delete()
+                } catch (_: Exception) {}
+            }
+        }
+        return true
+    }
+
+    private val voipEngine: VoIPEngine by lazy { VoIPEngine(context) }
+
+    fun startLiveCall(targetIp: String, port: Int = VoIPEngine.DEFAULT_VOIP_PORT): Boolean {
+        return voipEngine.startCall(targetIp, port)
+    }
+
+    fun stopLiveCall(): Boolean {
+        return voipEngine.stopCall()
+    }
+
+    fun setCallMuted(isMuted: Boolean) {
+        voipEngine.setMuted(isMuted)
+    }
+
+    fun setCallSpeakerphone(isSpeakerOn: Boolean) {
+        voipEngine.setSpeakerphoneOn(isSpeakerOn)
+    }
+
+    fun getConnectedPeerIp(peerId: String?): String {
+        val activeSocketIps = socketManager.getActiveRemoteIps()
+        if (activeSocketIps.isNotEmpty()) {
+            return activeSocketIps.first()
+        }
+        return wifiDirectManager.getConnectedGroupOwnerIp(peerId) ?: "192.168.49.1"
+    }
 }
