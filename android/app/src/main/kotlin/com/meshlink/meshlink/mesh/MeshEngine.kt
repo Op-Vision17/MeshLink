@@ -847,24 +847,22 @@ class MeshEngine(private val context: Context) {
 
     private var mediaRecorder: android.media.MediaRecorder? = null
     private var currentRecordingPath: String? = null
+    private var recordingStartTimeMs: Long = 0L
 
     /**
-     * Starts recording AAC/M4A voice audio using native MediaRecorder.
+     * Starts native MediaRecorder saving AAC-LC audio to [outputPath].
      */
     fun startVoiceRecording(outputPath: String): Boolean {
-        return try {
-            val file = java.io.File(outputPath)
-            file.parentFile?.mkdirs()
+        try {
+            cancelVoiceRecording()
             currentRecordingPath = outputPath
-
+            recordingStartTimeMs = System.currentTimeMillis()
             val recorder = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 android.media.MediaRecorder(context)
             } else {
                 @Suppress("DEPRECATION")
                 android.media.MediaRecorder()
-            }
-
-            recorder.apply {
+            }.apply {
                 setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
                 setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
@@ -876,12 +874,12 @@ class MeshEngine(private val context: Context) {
             }
             mediaRecorder = recorder
             Log.i(TAG, "Native voice recording started: $outputPath")
-            true
+            return true
         } catch (e: Exception) {
             Log.e(TAG, "startVoiceRecording failed: ${e.message}", e)
             mediaRecorder = null
             currentRecordingPath = null
-            false
+            return false
         }
     }
 
@@ -890,12 +888,18 @@ class MeshEngine(private val context: Context) {
      */
     fun stopVoiceRecording(): String? {
         val path = currentRecordingPath
+        val durationMs = System.currentTimeMillis() - recordingStartTimeMs
+        if (durationMs < 500L) {
+            Log.w(TAG, "Voice recording too short (${durationMs}ms) — cancelling safely")
+            cancelVoiceRecording()
+            return null
+        }
         try {
             mediaRecorder?.apply {
                 stop()
                 release()
             }
-            Log.i(TAG, "Native voice recording stopped: $path")
+            Log.i(TAG, "Native voice recording stopped: $path (${durationMs}ms)")
         } catch (e: Exception) {
             Log.e(TAG, "stopVoiceRecording failed: ${e.message}", e)
         } finally {

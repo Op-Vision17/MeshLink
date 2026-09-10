@@ -72,7 +72,32 @@ class CallNotifier extends StateNotifier<CallStateModel> {
   Timer? _ringingTimeoutTimer;
   Timer? _durationTimer;
 
-  CallNotifier(this._ref, this._platformDataSource) : super(const CallStateModel());
+  CallNotifier(this._ref, this._platformDataSource) : super(const CallStateModel()) {
+    _initConnectionWatchdog();
+  }
+
+  void _initConnectionWatchdog() {
+    _ref.listen<MeshUiState>(meshProvider, (prev, next) {
+      if (state.status == CallStatus.connected ||
+          state.status == CallStatus.outgoingRinging ||
+          state.status == CallStatus.incomingRinging) {
+        final activePeer = state.peerId;
+        if (activePeer != null) {
+          final isPeerStillConnected = next.peers.any((p) =>
+              (p.id == activePeer || normalizeId(p.id) == normalizeId(activePeer)) &&
+              p.isConnected);
+          if (!isPeerStillConnected && prev != null) {
+            final wasConnected = prev.peers.any((p) =>
+                (p.id == activePeer || normalizeId(p.id) == normalizeId(activePeer)) &&
+                p.isConnected);
+            if (wasConnected) {
+              _endCallInternal(reason: 'Connection Lost', sendSignal: false);
+            }
+          }
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {

@@ -37,6 +37,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Timer? _recordingTimer;
   String? _recordingPath;
   bool _hasText = false;
+  double _dragOffset = 0.0;
+  bool _isCancelThreshold = false;
 
   @override
   void initState() {
@@ -189,6 +191,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _isRecording = true;
           _recordingSeconds = 0;
           _recordingPath = recordPath;
+          _dragOffset = 0.0;
+          _isCancelThreshold = false;
         });
 
         _recordingTimer?.cancel();
@@ -205,6 +209,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  void _onHoldRecordUpdate(LongPressMoveUpdateDetails details) {
+    if (!_isRecording) return;
+    setState(() {
+      _dragOffset = details.offsetFromOrigin.dx;
+      _isCancelThreshold = _dragOffset < -60;
+    });
+  }
+
+  Future<void> _onHoldRecordEnd() async {
+    if (!_isRecording) return;
+    if (_isCancelThreshold) {
+      await _cancelRecording();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Voice note cancelled'),
+            duration: Duration(milliseconds: 1000),
+          ),
+        );
+      }
+    } else if (_recordingSeconds < 1) {
+      await _cancelRecording();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hold to record, release to send'),
+            duration: Duration(milliseconds: 1400),
+          ),
+        );
+      }
+    } else {
+      await _stopAndSendRecording();
+    }
+  }
+
   Future<void> _cancelRecording() async {
     _recordingTimer?.cancel();
     try {
@@ -215,6 +254,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _isRecording = false;
       _recordingSeconds = 0;
       _recordingPath = null;
+      _dragOffset = 0.0;
+      _isCancelThreshold = false;
     });
   }
 
@@ -228,6 +269,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _isRecording = false;
         _recordingSeconds = 0;
         _recordingPath = null;
+        _dragOffset = 0.0;
+        _isCancelThreshold = false;
       });
 
       if (audioPath != null) {
@@ -247,6 +290,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _isRecording = false;
         _recordingSeconds = 0;
         _recordingPath = null;
+        _dragOffset = 0.0;
+        _isCancelThreshold = false;
       });
     }
   }
@@ -545,13 +590,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             child: SafeArea(
               child: _isRecording
-                  // Recording Mode Bar
+                  // WhatsApp-Style Active Recording Bar
                   ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withAlpha(20),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.redAccent.withAlpha(80), width: 1),
+                        color: _isCancelThreshold ? Colors.redAccent.withAlpha(30) : AppColors.getBg(context),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: _isCancelThreshold ? Colors.redAccent : Colors.redAccent.withAlpha(120),
+                          width: 1.2,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -565,6 +613,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
+                          // Live timer
                           Text(
                             '${(_recordingSeconds ~/ 60).toString().padLeft(2, '0')}:${(_recordingSeconds % 60).toString().padLeft(2, '0')}',
                             style: GoogleFonts.inter(
@@ -573,46 +622,58 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 14),
+                          // Slide to cancel / Release to cancel prompt
                           Expanded(
-                            child: Text(
-                              'Recording voice…',
-                              style: GoogleFonts.inter(
-                                color: AppColors.getSubtext(context),
-                                fontSize: 13,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _isCancelThreshold ? Icons.delete_outline_rounded : Icons.chevron_left_rounded,
+                                  color: _isCancelThreshold ? Colors.redAccent : AppColors.getSubtext(context),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _isCancelThreshold ? 'Release to cancel' : 'Slide left to cancel',
+                                  style: GoogleFonts.inter(
+                                    color: _isCancelThreshold ? Colors.redAccent : AppColors.getSubtext(context),
+                                    fontSize: 13,
+                                    fontWeight: _isCancelThreshold ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          // Cancel / Trash button
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
-                            onPressed: _cancelRecording,
-                            tooltip: 'Cancel Recording',
-                          ),
-                          const SizedBox(width: 4),
-                          // Send recording button
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: AppColors.getPrimary(context),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.send_rounded,
-                                color: isDark ? Colors.black : Colors.white,
-                                size: 18,
+                          // Active pulsing mic icon
+                          GestureDetector(
+                            onLongPressMoveUpdate: _onHoldRecordUpdate,
+                            onLongPressEnd: (_) => _onHoldRecordEnd(),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.redAccent.withAlpha(140),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
                               ),
-                              onPressed: _stopAndSendRecording,
-                              tooltip: 'Send Voice Note',
+                              child: const Icon(
+                                Icons.mic_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     )
-                  // Normal Typing Mode Bar
+                  // Normal Typing Mode Bar with Hold-to-Record Mic Button
                   : Row(
                       children: [
                         IconButton(
@@ -657,23 +718,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.getPrimary(context),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              _hasText ? Icons.send_rounded : Icons.mic_rounded,
-                              color: isDark ? Colors.black : Colors.white,
-                              size: 20,
+                        if (_hasText)
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.getPrimary(context),
+                              shape: BoxShape.circle,
                             ),
-                            onPressed: _hasText ? _sendMessage : _startRecording,
-                            tooltip: _hasText ? 'Send' : 'Record Voice Note',
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.send_rounded,
+                                color: isDark ? Colors.black : Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: _sendMessage,
+                              tooltip: 'Send',
+                            ),
+                          )
+                        else
+                          GestureDetector(
+                            onLongPressStart: (_) => _startRecording(),
+                            onLongPressMoveUpdate: _onHoldRecordUpdate,
+                            onLongPressEnd: (_) => _onHoldRecordEnd(),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Hold to record audio note, release to send'),
+                                  duration: Duration(milliseconds: 1400),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.getPrimary(context),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.mic_rounded,
+                                color: isDark ? Colors.black : Colors.white,
+                                size: 20,
+                              ),
+                            ),
                           ),
-                        ),
                       ],
                     ),
             ),

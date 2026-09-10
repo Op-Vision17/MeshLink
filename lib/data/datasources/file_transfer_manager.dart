@@ -84,11 +84,15 @@ class FileChunkPayload {
 class IncomingFileAssembly {
   final FileMetadataPayload metadata;
   final String targetPath;
-  final Map<int, List<int>> receivedChunks = {};
+  final String tempPartPath;
+  final RandomAccessFile raf;
+  final Set<int> receivedIndices = {};
 
   IncomingFileAssembly({
     required this.metadata,
     required this.targetPath,
+    required this.tempPartPath,
+    required this.raf,
   });
 }
 
@@ -100,10 +104,19 @@ class FileTransferManager {
     _cancelledTransfers.add(fileId);
     final assembly = _activeIncoming.remove(fileId);
     if (assembly != null) {
-      final f = File(assembly.targetPath);
-      if (f.existsSync()) {
+      try {
+        assembly.raf.closeSync();
+      } catch (_) {}
+      final tempFile = File(assembly.tempPartPath);
+      if (tempFile.existsSync()) {
         try {
-          f.deleteSync();
+          tempFile.deleteSync();
+        } catch (_) {}
+      }
+      final targetFile = File(assembly.targetPath);
+      if (targetFile.existsSync()) {
+        try {
+          targetFile.deleteSync();
         } catch (_) {}
       }
     }
@@ -175,43 +188,50 @@ class FileTransferManager {
     }
   }
 
-  // Starts receiving a file upon receiving FILE_META
+  // Starts receiving a file upon receiving FILE_META with direct disk streaming
   Future<void> handleIncomingMeta(FileMetadataPayload meta) async {
     final attachDir = await getAttachmentsDirectory();
     final safeFileName = '${meta.fileId}_${meta.fileName}';
-    final targetFile = File(p.join(attachDir, safeFileName));
+    final targetPath = p.join(attachDir, safeFileName);
+    final tempPartPath = p.join(attachDir, '${meta.fileId}.part');
+
+    final tempFile = File(tempPartPath);
+    final raf = await tempFile.open(mode: FileMode.write);
 
     _activeIncoming[meta.fileId] = IncomingFileAssembly(
       metadata: meta,
-      targetPath: targetFile.path,
+      targetPath: targetPath,
+      tempPartPath: tempPartPath,
+      raf: raf,
     );
   }
 
-  // Appends chunk data with index-based assembly to prevent out-of-order corruption
+  // Appends chunk data directly to disk without storing in RAM
   Future<({double progress, bool isCompleted, String? localPath})?> handleIncomingChunk(
       FileChunkPayload chunk) async {
     final assembly = _activeIncoming[chunk.fileId];
     if (assembly == null) return null;
 
     final bytes = base64Decode(chunk.dataBase64);
-    assembly.receivedChunks[chunk.chunkIndex] = bytes;
+    final offset = chunk.chunkIndex * kChunkSizeBytes;
+    await assembly.raf.setPosition(offset);
+    await assembly.raf.writeFrom(bytes);
+    assembly.receivedIndices.add(chunk.chunkIndex);
 
-    final progress = (assembly.receivedChunks.length / assembly.metadata.totalChunks).clamp(0.0, 1.0);
+    final progress = (assembly.receivedIndices.length / assembly.metadata.totalChunks).clamp(0.0, 1.0);
 
-    if (assembly.receivedChunks.length >= assembly.metadata.totalChunks) {
-      // Reassemble all chunks in exact sequential order 0..totalChunks-1
-      final targetFile = File(assembly.targetPath);
-      final raf = await targetFile.open(mode: FileMode.write);
-      for (int i = 0; i < assembly.metadata.totalChunks; i++) {
-        final chunkData = assembly.receivedChunks[i];
-        if (chunkData != null) {
-          await raf.writeFrom(chunkData);
-        }
+    if (assembly.receivedIndices.length >= assembly.metadata.totalChunks) {
+      await assembly.raf.flush();
+      await assembly.raf.close();
+
+      final tempFile = File(assembly.tempPartPath);
+      final finalFile = File(assembly.targetPath);
+      if (await finalFile.exists()) {
+        await finalFile.delete();
       }
-      await raf.flush();
-      await raf.close();
+      await tempFile.rename(finalFile.path);
 
-      final finalPath = assembly.targetPath;
+      final finalPath = finalFile.path;
       _activeIncoming.remove(chunk.fileId);
       return (progress: 1.0, isCompleted: true, localPath: finalPath);
     }
