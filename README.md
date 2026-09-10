@@ -172,6 +172,3 @@ MeshLink requests only permissions strictly necessary for offline peer-to-peer o
 
 ---
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
